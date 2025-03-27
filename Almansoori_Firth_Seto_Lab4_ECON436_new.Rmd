@@ -1,0 +1,152 @@
+---
+title: "ECON436 Lab 4"
+author: "Abdulla Almansoori, Alexander Firth, Nathan Seto"
+date: "`r Sys.Date()`"
+output: pdf_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+Load required libraries (to read excel files, to manipulate dataframes, to plot time series using ts.plot, to test for stationarity)
+
+```{r setup, echo = TRUE}
+
+# clean existing variables
+rm(list=ls())
+
+library(knitr)
+library(formatR)
+library(tidyverse)
+library(readxl)
+library(graphics)
+library(lubridate)
+library(tseries)
+library(urca) # For ca.jo
+library(tsDyn) # For VECM
+opts_chunk$set(include = TRUE, message = FALSE, warning = FALSE, tidy = TRUE)
+```
+
+
+A. Monthly sales taxes modeling
+Input project data and create VECM data
+
+```{r}
+# Input the sheet "Monthly" of the file "FinalData.xlsx
+FinalData <- read_excel("~/coursework/Data Raw/FinalData.xlsx", sheet = 1)
+
+Manufacturing <- read_excel("~/coursework/Data Raw/Manufacturing.xlsx")
+Food_accomidation <- read_excel("~/coursework/Data Raw/Food and accomidation.xlsx")
+retailemployees <- read_excel("~/coursework/Data Raw/retail employees.xlsx")
+Transportation <- read_excel("~/coursework/Data Raw/Transportation.xlsx")
+
+TrafficVolume <- read_excel("~/coursework/Data Raw/TrafficVolume.xlsx") 
+# Data from https://dtdapps.coloradodot.info/otis/TrafficData#ui/0/0/1/station/000127/criteria/27425//false/true/
+TrafficVolume_clean <- TrafficVolume[TrafficVolume$Year >= 2012 & TrafficVolume$Year <= 2024, ]
+TrafficVolume_clean <- TrafficVolume_clean[, -c(1, 15)] |> arrange(Year)
+
+long_Trans <- Transportation |> 
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "transportation_employment") |> 
+  mutate(Month = match(Month, month.abb), .before = Month)
+
+long_Retail <- retailemployees |> 
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "RT_employment") |> 
+  mutate(Month = match(Month, month.abb), .before = Month)
+
+long_Food <- Food_accomidation |> 
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "AFS_employment") |> 
+  mutate(Month = match(Month, month.abb), .before = Month)
+
+long_Manf <- Manufacturing |> 
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "MAN_employment") |> 
+  mutate(Month = match(Month, month.abb), .before = Month)
+
+long_Traffic <- TrafficVolume_clean %>%
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "Value") %>%
+  mutate(
+    Month = match(Month, month.abb),
+    Month = as.Date(paste(Year, Month, "01", sep = "-")),
+  ) %>%
+  select(Month, Year, Value,)
+long_Traffic <- long_Traffic |> mutate(Date = Month, .before = Month)
+long_Traffic <- long_Traffic |> mutate(Month = lubridate::month(long_Traffic$Date))
+
+
+# The number of cointegrating vectors depends on number of distinct BLS categories that you think are determined by the economic conditions of Larimer county.
+# These variables should go first in the dataframe df. They should be followed by the variables that are driven state or country-level conditions.
+# Then add additional data you want to add (licenses and/or data you think is cointegrated with the sales tax data).
+# Then add the sales tax data.
+# Log all variables
+df <- cbind(FinalData, 
+            transportation_employment = long_Trans$transportation_employment, 
+            MAN_employment= long_Manf$MAN_employment, 
+            AFS_employment = long_Food$AFS_employment, 
+            RT_employment = long_Retail$RT_employment,
+            long_Traffic$Value)
+df <- df |> mutate(month = month(df$Month), .before = year)
+df <- df |> select(-Month)
+new_df <- df %>% select("TP","GP","SP", "PSP","MAN_employment","AFS_employment","RT_employment","long_Traffic$Value" )
+ldf <- log(new_df)
+CombinedTS <- ts(as.matrix(ldf), start = c(2012, 1), frequency = 12)
+
+```
+
+
+#========================================================
+# Cointegrating vectors (long run)
+#========================================================
+
+```{r}
+# Conduct the Johansen procedure
+Johansen <- ca.jo(ldf, ecdet="none", type="eigen", K=12) # K = number of periods in a year (4 if quarterly data, 12 if monthly data)
+
+summary(Johansen)
+```
+
+1. Coefficients
+```{r}
+Beta <- round(coefB(Johansen, r=8), 3) # r = number of cointegrating vectors
+Beta
+```
+
+
+2. Error correction term
+
+For each cointegrating vector, 
+- create the corresponding error correction term by multiplying the cointegrating vector with the time series in your model.
+- test if the error correction term is stationary
+- plot the error correction term
+
+```{r}
+ECT <- as.matrix(ldf) %*% Beta
+
+ECT_df <- as.data.frame(ECT)
+colnames(ECT_df) <- paste0("ECT_", 1:ncol(ECT_df))
+
+stationarity_results <- sapply(ECT_df, function(x) adf.test(x)$p.value)
+
+print(stationarity_results)
+
+ECT_ts <- ts(ECT, start = c(2012, 1), frequency = 12) 
+
+ts.plot(ECT_ts, col = rainbow(ncol(ECT_ts)), 
+        main = "Error Correction Terms",
+        ylab = "ECT Value", xlab = "Time")
+
+```
+
+#========================================================
+# Short run adjustment coefficients
+#========================================================
+
+```{r}
+vecm <- VECM(ldf, lag=11, r=7, estim="ML", include = "const") # lag = K-1
+summary(vecm)
+```
+
+For each vector, we need at least one adjustment speed to have the opposite sign of the corresponding cointegrating vector coefficient and be statistically significant.
+
+Vec 1: 
+Vec 2:
+....
+

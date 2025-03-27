@@ -33,14 +33,14 @@ Input project data and create VECM data
 
 ```{r}
 # Input the sheet "Monthly" of the file "FinalData.xlsx
-FinalData <- read_excel("~/coursework/Data Raw/FinalData.xlsx", sheet = 1)
+FinalData <- read_excel("~/ECON436_SalesTax/Data/FinalData.xlsx", sheet = 1)
 
-Manufacturing <- read_excel("~/coursework/Data Raw/Manufacturing.xlsx")
-Food_accomidation <- read_excel("~/coursework/Data Raw/Food and accomidation.xlsx")
-retailemployees <- read_excel("~/coursework/Data Raw/retail employees.xlsx")
-Transportation <- read_excel("~/coursework/Data Raw/Transportation.xlsx")
+Manufacturing <- read_excel("~/ECON436_SalesTax/Data/Manufacturing.xlsx")
+Food_accomidation <- read_excel("~/ECON436_SalesTax/Data/Food and accomidation.xlsx")
+retailemployees <- read_excel("~/ECON436_SalesTax/Data/retail employees.xlsx")
+Transportation <- read_excel("~/ECON436_SalesTax/Data/Transportation.xlsx")
 
-TrafficVolume <- read_excel("~/coursework/Data Raw/TrafficVolume.xlsx") 
+TrafficVolume <- read_excel("~/ECON436_SalesTax/Data/TrafficVolume.xlsx") 
 # Data from https://dtdapps.coloradodot.info/otis/TrafficData#ui/0/0/1/station/000127/criteria/27425//false/true/
 TrafficVolume_clean <- TrafficVolume[TrafficVolume$Year >= 2012 & TrafficVolume$Year <= 2024, ]
 TrafficVolume_clean <- TrafficVolume_clean[, -c(1, 15)] |> arrange(Year)

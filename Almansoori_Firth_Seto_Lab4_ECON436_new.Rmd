@@ -88,10 +88,20 @@ df <- cbind(FinalData,
             long_Traffic$Value)
 df <- df |> mutate(month = month(df$Month), .before = year)
 df <- df |> select(-Month)
-new_df <- df %>% select("TP","EDUHS","TTU", "FA","MAN_employment","AFS_employment","RT_employment","long_Traffic$Value" )
+new_df <- df %>% select("TP","EDUHS","TTU", "FA","MAN_employment","AFS_employment","RT_employment", "long_Traffic$Value", "Lead_STF_Real")
 ldf <- log(new_df)
+
 CombinedTS <- ts(ldf, start = c(2012, 1), frequency = 12)
 ts.plot(CombinedTS)
+```
+
+```{r}
+#plotting individual time series
+ts.vars <- list("TP", "EDUHS", "TTU", "FA", "MAN_employment", "AFS_employment", "RT_employment", "long_Traffic$Value", "Lead_STF_Real")
+
+for (var in ts.vars) {
+  print(ts.plot(ts(ldf[[var]], start= c(2012, 1), frequency = 12), gpars = list(xlab = "Time", ylab = paste(var))))
+}
 ```
 
 
@@ -108,7 +118,7 @@ summary(Johansen)
 
 1. Coefficients
 ```{r}
-Beta <- round(coefB(Johansen, r=5), 3) # r = number of cointegrating vectors
+Beta <- round(coefB(Johansen, r=6), 3) # r = number of cointegrating vectors
 Beta
 ```
 
@@ -143,7 +153,7 @@ ts.plot(ECT_ts, col = rainbow(ncol(ECT_ts)),
 #========================================================
 
 ```{r}
-vecm <- VECM(ldf, lag=11, r=5, estim="ML", include = "const") # lag = K-1
+vecm <- VECM(ldf, lag=11, r=6, estim="ML", include = "const") # lag = K-1
 summary(vecm)
 ```
 

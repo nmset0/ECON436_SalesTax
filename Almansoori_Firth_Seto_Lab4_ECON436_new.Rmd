@@ -90,14 +90,14 @@ df <- df |> mutate(month = month(df$Month), .before = year)
 df <- df |> select(-Month)
 new_df <- df %>% select("TP","EDUHS","TTU", "FA","MAN_employment","AFS_employment","RT_employment", "long_Traffic$Value", "Lead_STF_Real")
 ldf <- log(new_df)
-
+ldf <- ldf |> rename(traffic_frequency = `long_Traffic$Value`)
 CombinedTS <- ts(ldf, start = c(2012, 1), frequency = 12)
 ts.plot(CombinedTS)
 ```
 
-```{r}
-#plotting individual time series
-ts.vars <- list("TP", "EDUHS", "TTU", "FA", "MAN_employment", "AFS_employment", "RT_employment", "long_Traffic$Value", "Lead_STF_Real")
+```{r tsplots}
+# plotting individual time series
+ts.vars <- list("TP", "EDUHS", "TTU", "FA", "MAN_employment", "AFS_employment", "RT_employment", "traffic_frequency", "Lead_STF_Real")
 
 for (var in ts.vars) {
   print(ts.plot(ts(ldf[[var]], start= c(2012, 1), frequency = 12), gpars = list(xlab = "Time", ylab = paste(var))))

@@ -108,7 +108,7 @@ summary(Johansen)
 
 1. Coefficients
 ```{r}
-Beta <- round(coefB(Johansen, r=8), 3) # r = number of cointegrating vectors
+Beta <- round(coefB(Johansen, r=5), 3) # r = number of cointegrating vectors
 Beta
 ```
 
@@ -143,7 +143,7 @@ ts.plot(ECT_ts, col = rainbow(ncol(ECT_ts)),
 #========================================================
 
 ```{r}
-vecm <- VECM(ldf, lag=11, r=7, estim="ML", include = "const") # lag = K-1
+vecm <- VECM(ldf, lag=11, r=5, estim="ML", include = "const") # lag = K-1
 summary(vecm)
 ```
 

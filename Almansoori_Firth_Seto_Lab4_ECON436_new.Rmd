@@ -142,9 +142,10 @@ print(stationarity_results)
 
 ECT_ts <- ts(ECT, start = c(2012, 1), frequency = 12) 
 
-ts.plot(ECT_ts, col = rainbow(ncol(ECT_ts)), 
+ts.plot(ECT_ts, col = c("magenta", "blue", "purple", "forestgreen", "goldenrod2", "red"), 
         main = "Error Correction Terms",
         ylab = "ECT Value", xlab = "Time")
+
 
 ```
 

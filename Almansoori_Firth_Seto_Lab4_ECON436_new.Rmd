@@ -34,7 +34,7 @@ Input project data and create VECM data
 ```{r}
 # Input the sheet "Monthly" of the file "FinalData.xlsx
 FinalData <- read_excel("~/ECON436_SalesTax/Data/FinalData.xlsx", sheet = 1)
-FinalData$Lead_STF_Real <- FinalData$Lead_STF_Real* (3.75/4.25)
+FinalData$Lead_STF_Real <- FinalData$Lead_STF_Real* (3.85/4.25)
 FinalData$EDUHS[1:12] <- FinalData$EDUHS[1:12] - 5
 FinalData$SG[1:12] <- FinalData$SG[1:12] + 5
 

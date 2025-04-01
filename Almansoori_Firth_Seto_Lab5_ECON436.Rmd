@@ -25,8 +25,12 @@ rm(list=ls())
 
 ```{r}
 library(readxl)
-library(tidyverse)
+library(dplyr)
+library(readr)
 library(graphics)
+library(urca) # For ca.jo
+library(tsDyn) # For VECM
+library(vars)
 ```
 
 #========================================================
@@ -34,15 +38,68 @@ library(graphics)
 #========================================================
 
 ```{r}
-# Input the file "FinalData.xlsx" (use the version posted on Canvas on 4/1)
-FinalData <- read_excel("Data/FinalData.xlsx", sheet = 1)
-#  Create your variables
+# Input the sheet "Monthly" of the file "FinalData.xlsx
+FinalData <- read_excel("~/ECON436_SalesTax/Data/FinalData.xlsx", sheet = 1)
+FinalData$Lead_STF_Real <- FinalData$Lead_STF_Real* (3.85/4.25)
+FinalData$EDUHS[1:12] <- FinalData$EDUHS[1:12] - 5
+FinalData$SG[1:12] <- FinalData$SG[1:12] + 5
+FinalData <- FinalData[-nrow(FinalData),]
+
+Manufacturing <- read_excel("~/ECON436_SalesTax/Data/Manufacturing.xlsx")
+Food_accomidation <- read_excel("~/ECON436_SalesTax/Data/Food and accomidation.xlsx")
+retailemployees <- read_excel("~/ECON436_SalesTax/Data/retail employees.xlsx")
+Transportation <- read_excel("~/ECON436_SalesTax/Data/Transportation.xlsx")
+
+TrafficVolume <- read_excel("~/ECON436_SalesTax/Data/TrafficVolume.xlsx") 
+# Data from https://dtdapps.coloradodot.info/otis/TrafficData#ui/0/0/1/station/000127/criteria/27425//false/true/
+TrafficVolume_clean <- TrafficVolume[TrafficVolume$Year >= 2012 & TrafficVolume$Year <= 2024, ]
+TrafficVolume_clean <- TrafficVolume_clean[, -c(1, 15)] |> arrange(Year)
+
+long_Trans <- Transportation |> 
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "transportation_employment") |> 
+  mutate(Month = match(Month, month.abb), .before = Month)
+
+long_Retail <- retailemployees |> 
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "RT_employment") |> 
+  mutate(Month = match(Month, month.abb), .before = Month)
+
+long_Food <- Food_accomidation |> 
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "AFS_employment") |> 
+  mutate(Month = match(Month, month.abb), .before = Month)
+
+long_Manf <- Manufacturing |> 
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "MAN_employment") |> 
+  mutate(Month = match(Month, month.abb), .before = Month)
+
+long_Traffic <- TrafficVolume_clean |>
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "Value") |>
+  mutate(
+    Month = match(Month, month.abb),
+    Month = as.Date(paste(Year, Month, "01", sep = "-")),
+  ) |>
+  dplyr::select(Month, Year, Value,)
+long_Traffic <- long_Traffic |> mutate(Date = Month, .before = Month)
+long_Traffic <- long_Traffic |> mutate(Month = lubridate::month(long_Traffic$Date))
 
 
-
-
+# The number of cointegrating vectors depends on number of distinct BLS categories that you think are determined by the economic conditions of Larimer county.
+# These variables should go first in the dataframe df. They should be followed by the variables that are driven state or country-level conditions.
+# Then add additional data you want to add (licenses and/or data you think is cointegrated with the sales tax data).
+# Then add the sales tax data.
 # Log all variables
-ldf <- log(df)
+df <- cbind(FinalData, 
+            transportation_employment = long_Trans$transportation_employment, 
+            MAN_employment= long_Manf$MAN_employment, 
+            AFS_employment = long_Food$AFS_employment, 
+            RT_employment = long_Retail$RT_employment,
+            long_Traffic$Value)
+df <- df |> mutate(month = month(df$Month), .before = year)
+df <- df |> dplyr::select(-Month)
+new_df <- df |> dplyr::select("TP","EDUHS","TTU", "FA","MAN_employment","AFS_employment","RT_employment", "long_Traffic$Value", "Lead_STF_Real")
+ldf <- log(new_df)
+ldf <- ldf |> rename(traffic_frequency = `long_Traffic$Value`)
+CombinedTS <- ts(ldf, start = c(2012, 1), frequency = 12)
+#ts.plot(CombinedTS)
 
 ```
 
@@ -50,14 +107,7 @@ ldf <- log(df)
 # C. Create VECM model using data up to 2025/01
 #========================================================
 
-Calling the packages for use
 
-```{r}
-library(urca) # For ca.jo
-library(tsDyn) # For VECM
-library(vars)  # vec2var
-
-```
 Johansen procedure
 
 ```{r}
@@ -71,7 +121,7 @@ Confirm the number of cointegrating vectors based on the results of the Johansen
 Print the matrix of cointegrating vectors.
 
 ```{r}
-Beta <- round(coefB(Johansen, r=4), 3) # r = number of cointegrating vectors
+Beta <- round(coefB(Johansen, r=6), 3) # r = number of cointegrating vectors
 Beta
 ```
 
@@ -79,15 +129,12 @@ Beta
 Short run adjustment coefficients
 
 ```{r}
-vecm <- VECM(ldf, lag=11, r=4, estim="ML", include = "const") # lag = K-1
-summary(vecm)
+vecm <- VECM(ldf, lag=11, r=6, estim="ML", include = "const") # lag = K-1
+#summary(vecm)
 ```
 
 For each vector, we need at least one adjustment speed to have the oppositive sign of the corresponding cointegrating vector coefficient and be statistically significant.
 
-Vec 1: 
-Vec 2:
-....
 
 #========================================================
 # D. Test if model predicts 2024 data well
@@ -101,14 +148,14 @@ numrow <- nrow(ldf)
 ldf2023 <- ldf[1:(numrow- 12),]
 # Fit the same VECM model
 Johansen2023 <- ca.jo(ldf2023, ecdet="none", type="eigen", K=12)
-
+summary(Johansen2023)
 ```
 
 Forecast 2024 data
 
 ```{r}
 # vec2var: Transform a VECM to VAR in levels
-vec2var_ca.jo2023 <- vec2var(Johansen2023, r=4)
+vec2var_ca.jo2023 <- vec2var(Johansen2023, r=8)
 # forecasting horizon
 nhor <- 12 
 # Forecasting
@@ -119,8 +166,8 @@ Compare actual and forecasted 2024 lead_STF_Real
 Calculate Mean Absolute Error for 2024
 
 ```{r}
-Forecast2024 <- pred_vec2var_ca.jo2024$fcst$FinalData.lead_STF_Real[,1]
-Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "lead_STF_Real"]
+Forecast2024 <- pred_vec2var_ca.jo2024$fcst$FinalData.Lead_STF_Real[,1]
+Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "Lead_STF_Real"]
 
 AE <- abs(Forecast2024 - Actual2024)
 MAE <- mean(AE[,1])
@@ -142,6 +189,6 @@ vec2var_ca.jo <- vec2var(Johansen, r=4)
 nhor <- 10 
 # Forecasting 2025 (10 observations)
 pred_vec2var_ca.jo <- predict(vec2var_ca.jo, n.ahead=nhor)
-Forecast2025 <- as.data.frame(pred_vec2var_ca.jo$fcst$FinalData.lead_STF_Real[,1])
+Forecast2025 <- as.data.frame(pred_vec2var_ca.jo$fcst$FinalData.Lead_STF_Real[,1])
 write_csv(Forecast2025, "Forecast2025.csv")
 ```

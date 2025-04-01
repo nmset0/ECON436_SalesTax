@@ -25,14 +25,14 @@ forecast_plot1 <- autoplot(Stan_SalesTax_Forecast)
 forecast_plot1
 
 
-# SARIMA object
-sf2 <- auto.sarima(ts = FinalData$Lead_STF_Real, seasonal = TRUE, iter = 5000, chains = 4)
-# regular SARIMA forecasting model
-Sarima_SalesTax_Forecast <- forecast(object = sf2, h = 12)
-Sarima_SalesTax_Forecast_2025 <- as.data.frame(Sarima_SalesTax_Forecast)
-View(Sarima_SalesTax_Forecast_2025)
-forecast_plot2 <- autoplot(Sarima_SalesTax_Forecast)
-forecast_plot2
+# #SARIMA object
+# sf2 <- auto.sarima(ts = FinalData$Lead_STF_Real, seasonal = TRUE, iter = 5000, chains = 4)
+# # regular SARIMA forecasting model
+# Sarima_SalesTax_Forecast <- forecast(object = sf2, h = 12)
+# Sarima_SalesTax_Forecast_2025 <- as.data.frame(Sarima_SalesTax_Forecast)
+# View(Sarima_SalesTax_Forecast_2025)
+# forecast_plot2 <- autoplot(Sarima_SalesTax_Forecast)
+# forecast_plot2
 
 # Using stan_sarima yields more realistic results than auto.sarima.
 # However, the minimum sales tax value seems improbable, and might be influenced by the drastic dip from 2020.

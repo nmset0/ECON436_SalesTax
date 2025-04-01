@@ -131,14 +131,22 @@ For each cointegrating vector,
 - plot the error correction term
 
 ```{r}
+# Error correction term vectors
 ECT <- as.matrix(ldf) %*% Beta
 
 ECT_df <- as.data.frame(ECT)
 colnames(ECT_df) <- paste0("ECT_", 1:ncol(ECT_df))
 
-stationarity_results <- sapply(ECT_df, function(x) adf.test(x)$p.value)
+# stationarity_results <- sapply(ECT_df, function(x) adf.test(x)$p.value)
+
+# Stationarity tests
+for (vec in 1:ncol(ECT_df)) {
+  dickeyfuller <- adf.test(ECT_df[[vec]])
+  print(dickeyfuller)
+}
 
 print(stationarity_results)
+
 
 ECT_ts <- ts(ECT, start = c(2012, 1), frequency = 12) 
 

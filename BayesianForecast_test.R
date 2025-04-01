@@ -15,7 +15,7 @@ FinalData$SG[1:12] <- FinalData$SG[1:12] + 5
 ts.object <- ts(FinalData$Lead_STF_Real, start = c(2012, 1), frequency = 12)
 # Bayesian model
 sf1 <- stan_sarima(ts = ts.object, order = c(0,0,0), seasonal = c(1,1,1),
-                   prior_mu0 = student(mu = 0.03519496,sd = 0.005429012,df = 155))
+                   prior_mu0 = student(mu = 0, sd = 1,df = 155))
 # Bayesian forecasting
 Stan_SalesTax_Forecast <- forecast(sf1, h = 12)
 Stan_SalesTax_Forecast_2025 <- as.data.frame(Stan_SalesTax_Forecast)
@@ -37,4 +37,5 @@ forecast_plot2
 # Using stan_sarima yields more realistic results than auto.sarima.
 # However, the minimum sales tax value seems improbable, and might be influenced by the drastic dip from 2020.
 # Stan_sarima maintains the upward trend of sales tax, while auto.sarima is more stationary in nature.
+# auto.sarima may do better including priors. Stan_sarima does worse with uninformative priors.
 # Waiting for the ARMA unit in ECON436

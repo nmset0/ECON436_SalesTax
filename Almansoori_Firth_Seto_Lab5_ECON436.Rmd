@@ -1,0 +1,147 @@
+---
+title: "Lab 5"
+author: "Abdulla Almansoori, Alexander Firth, Nathan Seto"
+date: "`r Sys.Date()`"
+output: pdf_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+#========================================================
+# A. Set up
+#========================================================
+
+1.Set up working directory and clean global environment. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+# clean existing variables
+rm(list=ls())
+```
+
+
+2.Load required libraries (to read excel files, to manipulate dataframes, to plot time series using ts.plot)
+
+```{r}
+library(readxl)
+library(tidyverse)
+library(graphics)
+```
+
+#========================================================
+# B. Define model variables
+#========================================================
+
+```{r}
+# Input the file "FinalData.xlsx" (use the version posted on Canvas on 4/1)
+FinalData <- read_excel("Data/FinalData.xlsx", sheet = 1)
+#  Create your variables
+
+
+
+
+# Log all variables
+ldf <- log(df)
+
+```
+
+#========================================================
+# C. Create VECM model using data up to 2025/01
+#========================================================
+
+Calling the packages for use
+
+```{r}
+library(urca) # For ca.jo
+library(tsDyn) # For VECM
+library(vars)  # vec2var
+
+```
+Johansen procedure
+
+```{r}
+# Conduct the Johansen procedure
+Johansen <- ca.jo(ldf, ecdet="none", type="eigen", K=12) # K = number of periods in a year (4 if quarterly data, 12 if monthly data)
+summary(Johansen)
+```
+Confirm the number of cointegrating vectors based on the results of the Johansen procedure.
+
+
+Print the matrix of cointegrating vectors.
+
+```{r}
+Beta <- round(coefB(Johansen, r=4), 3) # r = number of cointegrating vectors
+Beta
+```
+
+
+Short run adjustment coefficients
+
+```{r}
+vecm <- VECM(ldf, lag=11, r=4, estim="ML", include = "const") # lag = K-1
+summary(vecm)
+```
+
+For each vector, we need at least one adjustment speed to have the oppositive sign of the corresponding cointegrating vector coefficient and be statistically significant.
+
+Vec 1: 
+Vec 2:
+....
+
+#========================================================
+# D. Test if model predicts 2024 data well
+#========================================================
+
+Rerun the model on data up to 2024/01
+
+```{r}
+# truncate the data by removing the 12 last observations
+numrow <- nrow(ldf)
+ldf2023 <- ldf[1:(numrow- 12),]
+# Fit the same VECM model
+Johansen2023 <- ca.jo(ldf2023, ecdet="none", type="eigen", K=12)
+
+```
+
+Forecast 2024 data
+
+```{r}
+# vec2var: Transform a VECM to VAR in levels
+vec2var_ca.jo2023 <- vec2var(Johansen2023, r=4)
+# forecasting horizon
+nhor <- 12 
+# Forecasting
+pred_vec2var_ca.jo2024 <- predict(vec2var_ca.jo2023, n.ahead=nhor)
+```
+
+Compare actual and forecasted 2024 lead_STF_Real
+Calculate Mean Absolute Error for 2024
+
+```{r}
+Forecast2024 <- pred_vec2var_ca.jo2024$fcst$FinalData.lead_STF_Real[,1]
+Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "lead_STF_Real"]
+
+AE <- abs(Forecast2024 - Actual2024)
+MAE <- mean(AE[,1])
+MAE
+```
+
+You can redo steps A-D many times until you find the model with the lowest MAE. 
+Play with the variables included in yopur model and with the number of months included in your dataset. Try including data starting in 2013, or in 2014, or later, instead of 2012, and see if you get better predictions.
+
+#========================================================
+# E. Forecast lead_STF_Real for the months 2/25 to 11/25 and save it.
+#========================================================
+
+```{r}
+# vec2var: Transform a VECM to VAR in levels
+# This is the original model, using all the data
+vec2var_ca.jo <- vec2var(Johansen, r=4)
+# forecasting horizon
+nhor <- 10 
+# Forecasting 2025 (10 observations)
+pred_vec2var_ca.jo <- predict(vec2var_ca.jo, n.ahead=nhor)
+Forecast2025 <- as.data.frame(pred_vec2var_ca.jo$fcst$FinalData.lead_STF_Real[,1])
+write_csv(Forecast2025, "Forecast2025.csv")
+```

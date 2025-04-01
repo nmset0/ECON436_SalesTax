@@ -95,7 +95,19 @@ CombinedTS <- ts(ldf, start = c(2012, 1), frequency = 12)
 ts.plot(CombinedTS)
 ```
 
-```{r tsplots}
+```{r plots}
+# Traffic data scatterplot
+# library(ggplot2)
+# model <- lm(ldf$traffic_frequency ~ FinalData$Month)
+# FinalData <- FinalData |> mutate(year = year(Month))
+# gg.plot <- ggplot(data = NULL, aes(y = ldf$traffic_frequency, x = FinalData$Month)) + 
+#   geom_point(color = FinalData$year) + 
+#   geom_abline(intercept = model$coefficients[1], slope = model$coefficients[2], col = "black", linewidth = 0.75) +
+#   labs(x = "Time", y = "Traffic") + 
+#   theme_minimal()
+# 
+# gg.plot
+
 # plotting individual time series
 ts.vars <- list("TP", "EDUHS", "TTU", "FA", "MAN_employment", "AFS_employment", "RT_employment", "traffic_frequency", "Lead_STF_Real")
 
@@ -153,8 +165,7 @@ ECT_ts <- ts(ECT, start = c(2012, 1), frequency = 12)
 ts.plot(ECT_ts, col = c("magenta", "blue", "purple", "forestgreen", "goldenrod2", "red"), 
         main = "Error Correction Terms",
         ylab = "ECT Value", xlab = "Time")
-
-
+legend("bottomright", legend = colnames(ECT_df), col = c("magenta", "blue", "purple", "forestgreen", "goldenrod2", "red"), lty = 1)
 ```
 
 #========================================================

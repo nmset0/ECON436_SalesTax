@@ -25,6 +25,8 @@ rm(list=ls())
 
 ```{r}
 library(readxl)
+library(tidyr)
+library(lubridate)
 library(dplyr)
 library(readr)
 library(graphics)
@@ -145,7 +147,7 @@ Rerun the model on data up to 2024/01
 ```{r}
 # truncate the data by removing the 12 last observations
 numrow <- nrow(ldf)
-ldf2023 <- ldf[1:(numrow- 12),]
+ldf2023 <- ldf[FinalData$year!=2024,]
 # Fit the same VECM model
 Johansen2023 <- ca.jo(ldf2023, ecdet="none", type="eigen", K=12)
 summary(Johansen2023)
@@ -166,11 +168,14 @@ Compare actual and forecasted 2024 lead_STF_Real
 Calculate Mean Absolute Error for 2024
 
 ```{r}
-Forecast2024 <- pred_vec2var_ca.jo2024$fcst$FinalData.Lead_STF_Real[,1]
-Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "Lead_STF_Real"]
+#Forecast2024 <- pred_vec2var_ca.jo2024$fcst$FinalData.Lead_STF_Real[,1]
+Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1]
+#Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "Lead_STF_Real"]
+Actual2024 <- ldf$Lead_STF_Real[FinalData$year == 2024]
 
 AE <- abs(Forecast2024 - Actual2024)
-MAE <- mean(AE[,1])
+#MAE <- mean(AE[,1])
+MAE <- mean(AE)
 MAE
 ```
 
@@ -184,11 +189,11 @@ Play with the variables included in yopur model and with the number of months in
 ```{r}
 # vec2var: Transform a VECM to VAR in levels
 # This is the original model, using all the data
-vec2var_ca.jo <- vec2var(Johansen, r=4)
+vec2var_ca.jo <- vec2var(Johansen, r=8)
 # forecasting horizon
 nhor <- 10 
 # Forecasting 2025 (10 observations)
 pred_vec2var_ca.jo <- predict(vec2var_ca.jo, n.ahead=nhor)
 Forecast2025 <- as.data.frame(pred_vec2var_ca.jo$fcst$FinalData.Lead_STF_Real[,1])
-write_csv(Forecast2025, "Forecast2025.csv")
+#write_csv(Forecast2025, "Forecast2025.csv")
 ```

@@ -169,7 +169,7 @@ Calculate Mean Absolute Error for 2024
 
 ```{r}
 #Forecast2024 <- pred_vec2var_ca.jo2024$fcst$FinalData.Lead_STF_Real[,1]
-Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1]
+Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] # Predicts log(Lead_STF_Real) from ldf2023
 Forecast2024_unLog <- exp(Forecast2024)
 
 # Since we're using ldf/ldf2023, it doesn't make sense to take the difference between log(sales tax) from ldf and sales tax from FinalData. We can convert the values later.

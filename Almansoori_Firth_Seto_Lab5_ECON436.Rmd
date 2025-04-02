@@ -170,13 +170,19 @@ Calculate Mean Absolute Error for 2024
 ```{r}
 #Forecast2024 <- pred_vec2var_ca.jo2024$fcst$FinalData.Lead_STF_Real[,1]
 Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1]
+Forecast2024_unLog <- exp(Forecast2024)
 #Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "Lead_STF_Real"]
 Actual2024 <- ldf$Lead_STF_Real[FinalData$year == 2024]
+Actual2024_unLog <- exp(Actual2024)
 
 AE <- abs(Forecast2024 - Actual2024)
 #MAE <- mean(AE[,1])
 MAE <- mean(AE)
 MAE
+
+AE_unLog <- abs(Forecast2024_unLog-Actual2024_unLog)
+MAE_unLog <- mean(AE_unLog)
+MAE_unLog
 ```
 
 You can redo steps A-D many times until you find the model with the lowest MAE. 
@@ -194,6 +200,9 @@ vec2var_ca.jo <- vec2var(Johansen, r=8)
 nhor <- 10 
 # Forecasting 2025 (10 observations)
 pred_vec2var_ca.jo <- predict(vec2var_ca.jo, n.ahead=nhor)
-Forecast2025 <- as.data.frame(pred_vec2var_ca.jo$fcst$FinalData.Lead_STF_Real[,1])
-#write_csv(Forecast2025, "Forecast2025.csv")
+Forecast2025 <- as.data.frame(pred_vec2var_ca.jo[["fcst"]][["Lead_STF_Real"]][,1])
+Forecast2025 <- Forecast2025 |> rename(Lead_STF_Real_2025 = `pred_vec2var_ca.jo[["fcst"]][["Lead_STF_Real"]][, 1]`)
+# One column for log(sales tax) and a column for reversing log()
+Forecast2025 <- Forecast2025 |> mutate(Exp_Lead_STF_Real_2025 = exp(Lead_STF_Real_2025))
+write_csv(Forecast2025, "Data/Forecast2025.csv")
 ```

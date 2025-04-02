@@ -171,9 +171,14 @@ Calculate Mean Absolute Error for 2024
 #Forecast2024 <- pred_vec2var_ca.jo2024$fcst$FinalData.Lead_STF_Real[,1]
 Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1]
 Forecast2024_unLog <- exp(Forecast2024)
+
+# Since we're using ldf/ldf2023, it doesn't make sense to take the difference between log(sales tax) from ldf and sales tax from FinalData. We can convert the values later.
 #Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "Lead_STF_Real"]
 Actual2024 <- ldf$Lead_STF_Real[FinalData$year == 2024]
 Actual2024_unLog <- exp(Actual2024)
+
+round(Actual2024, 4) == round(ldf$Lead_STF_Real[FinalData$year==2024],4)
+round(Actual2024_unLog, 4) == round(FinalData$Lead_STF_Real[FinalData$year == 2024], 4)
 
 AE <- abs(Forecast2024 - Actual2024)
 #MAE <- mean(AE[,1])

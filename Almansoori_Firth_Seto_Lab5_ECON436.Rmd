@@ -186,11 +186,12 @@ MAE <- mean(AE[,1])
 #round(Actual2024_expo, 4) == round(FinalData$Lead_STF_Real[FinalData$year == 2024], 4)
 
 #MAE <- mean(AE)
-MAE
 
 # AE_expo <- abs(Forecast2024_expo-Actual2024_expo)
 # MAE_expo <- mean(AE_expo)
 # MAE_expo
+
+MAE
 ```
 
 You can redo steps A-D many times until you find the model with the lowest MAE. 

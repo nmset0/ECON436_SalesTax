@@ -98,7 +98,7 @@ df <- cbind(FinalData,
             long_Traffic$Value)
 df <- df |> mutate(month = month(df$Month), .before = year)
 df <- df |> dplyr::select(-Month)
-new_df <- df |> dplyr::select("TP","EDUHS","TTU", "FA","MAN_employment","AFS_employment","RT_employment", "long_Traffic$Value", "Lead_STF_Real")
+new_df <- df |> dplyr::select("LH", "INFO","EDUHS","TTU", "FA","MAN_employment","AFS_employment","RT_employment", "long_Traffic$Value", "Lead_STF_Real")
 ldf <- log(new_df)
 ldf <- ldf |> rename(traffic_frequency = `long_Traffic$Value`)
 CombinedTS <- ts(ldf, start = c(2012, 1), frequency = 12)
@@ -124,7 +124,7 @@ Confirm the number of cointegrating vectors based on the results of the Johansen
 Print the matrix of cointegrating vectors.
 
 ```{r}
-Beta <- round(coefB(Johansen, r=6), 3) # r = number of cointegrating vectors
+Beta <- round(coefB(Johansen, r=9), 3) # r = number of cointegrating vectors
 Beta
 ```
 
@@ -132,7 +132,7 @@ Beta
 Short run adjustment coefficients
 
 ```{r}
-vecm <- VECM(ldf, lag=11, r=6, estim="ML", include = "const") # lag = K-1
+vecm <- VECM(ldf, lag=11, r=9, estim="ML", include = "const") # lag = K-1
 #summary(vecm)
 ```
 
@@ -171,27 +171,28 @@ Calculate Mean Absolute Error for 2024
 ```{r}
 #Forecast2024 <- pred_vec2var_ca.jo2024$fcst$FinalData.Lead_STF_Real[,1]
 Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] # Predicts log(Lead_STF_Real) from ldf2023
-Forecast2024_unLog <- exp(Forecast2024) 
+#Forecast2024_expo <- exp(Forecast2024) 
 
-# Since we're using ldf/ldf2023, it doesn't make sense to take the difference between log(sales tax) from ldf and sales tax from FinalData. We can convert the values later.
-#Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "Lead_STF_Real"]
-Actual2024 <- ldf$Lead_STF_Real[FinalData$year == 2024]
-Actual2024_unLog <- exp(Actual2024) 
 
-round(Actual2024, 4) == round(ldf$Lead_STF_Real[FinalData$year==2024],4)
-round(Actual2024_unLog, 4) == round(FinalData$Lead_STF_Real[FinalData$year == 2024], 4)
+Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "Lead_STF_Real"]
+#Actual2024 <- ldf$Lead_STF_Real[FinalData$year == 2024]
+#Actual2024_expo <- exp(Actual2024) 
+
+#round(Actual2024, 4) == round(ldf$Lead_STF_Real[FinalData$year==2024],4)
+#round(Actual2024_expo, 4) == round(FinalData$Lead_STF_Real[FinalData$year == 2024], 4)
 
 AE <- abs(Forecast2024 - Actual2024)
-#MAE <- mean(AE[,1])
-MAE <- mean(AE)
+MAE <- mean(AE[,1])
+#MAE <- mean(AE)
 MAE
 
-AE_unLog <- abs(Forecast2024_unLog-Actual2024_unLog)
-MAE_unLog <- mean(AE_unLog)
+# AE_expo <- abs(Forecast2024_expo-Actual2024_expo)
+# MAE_expo <- mean(AE_expo)
+# MAE_expo
 ```
 
 You can redo steps A-D many times until you find the model with the lowest MAE. 
-Play with the variables included in yopur model and with the number of months included in your dataset. Try including data starting in 2013, or in 2014, or later, instead of 2012, and see if you get better predictions.
+Play with the variables included in your model and with the number of months included in your dataset. Try including data starting in 2013, or in 2014, or later, instead of 2012, and see if you get better predictions.
 
 #========================================================
 # E. Forecast lead_STF_Real for the months 2/25 to 11/25 and save it.
@@ -210,5 +211,9 @@ Forecast2025 <- Forecast2025 |> rename(Log_Lead_STF_Real_2025 = `pred_vec2var_ca
 
 # One column for log(sales tax) and a column for reversing log()
 Forecast2025 <- Forecast2025 |> mutate(Lead_STF_Real_2025 = exp(Log_Lead_STF_Real_2025))
+View(Forecast2025)
 #write_csv(Forecast2025, "Data/Forecast2025.csv")
 ```
+
+
+

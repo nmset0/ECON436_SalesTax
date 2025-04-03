@@ -175,23 +175,21 @@ Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "Lead_STF_Real"
 
 AE <- abs(Forecast2024 - Actual2024)
 MAE <- mean(AE[,1])
-
-#Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] # Predicts log(Lead_STF_Real) from ldf2023
-#Forecast2024_expo <- exp(Forecast2024) # Exponentiation of the forecast to undo log() function
-
-#Actual2024 <- ldf$Lead_STF_Real[FinalData$year == 2024]
-#Actual2024_expo <- exp(Actual2024) # Exponentiation of the observations to undo log() function
-
-#round(Actual2024, 4) == round(ldf$Lead_STF_Real[FinalData$year==2024],4)
-#round(Actual2024_expo, 4) == round(FinalData$Lead_STF_Real[FinalData$year == 2024], 4)
-
-#MAE <- mean(AE)
-
-# AE_expo <- abs(Forecast2024_expo-Actual2024_expo)
-# MAE_expo <- mean(AE_expo)
-# MAE_expo
-
 MAE
+
+Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] # Predicts log(Lead_STF_Real) from ldf2023
+Forecast2024_expo <- exp(Forecast2024) # Exponentiation of the forecast to undo log() function
+
+Actual2024 <- ldf$Lead_STF_Real[FinalData$year == 2024]
+Actual2024_expo <- exp(Actual2024) # Exponentiation of the observations to undo log() function
+
+round(Actual2024, 4) == round(ldf$Lead_STF_Real[FinalData$year==2024],4)
+round(Actual2024_expo, 4) == round(FinalData$Lead_STF_Real[FinalData$year == 2024], 4)
+
+mae <- mean(AE)
+AE_expo <- abs(Forecast2024_expo-Actual2024_expo)
+MAE_expo <- mean(AE_expo)
+round(MAE_expo, 5)
 ```
 
 You can redo steps A-D many times until you find the model with the lowest MAE. 
@@ -217,7 +215,7 @@ Forecast2025 <- Forecast2025 |> mutate(Lead_STF_Real_2025 = exp(Log_Lead_STF_Rea
 # Undo adjustment
 Forecast2025$Log_Lead_STF_Real_2025 <- Forecast2025$Log_Lead_STF_Real_2025 * (4.25/3.85)
 Forecast2025$Lead_STF_Real_2025 <- Forecast2025$Lead_STF_Real_2025 * (4.25/3.85)
-View(Forecast2025)
+print(Forecast2025)
 #write_csv(Forecast2025, "Data/Forecast2025.csv")
 ```
 

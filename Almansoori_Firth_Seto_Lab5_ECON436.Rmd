@@ -146,22 +146,22 @@ For each vector, we need at least one adjustment speed to have the oppositive si
 Rerun the model on data up to 2024/01
 
 ```{r}
-# truncate the data by removing the 12 last observations
+# truncate the data by removing last 12 observations
 numrow <- nrow(ldf)
-ldf2023 <- ldf[FinalData$year!=2024,]
+ldf2023 <- ldf[1:(numrow- 12),]
 # Fit the same VECM model
 Johansen2023 <- ca.jo(ldf2023, ecdet="none", type="eigen", K=12)
-summary(Johansen2023)
+summary(Johansen2023) # Johansen using log'd data (2023)
 ```
 
 Forecast 2024 data
 
 ```{r}
-# vec2var: Transform a VECM to VAR in levels
+# vec2var: Transform a VECM to VAR object in levels
 vec2var_ca.jo2023 <- vec2var(Johansen2023, r=8)
-# forecasting horizon
+# forecasting horizon (12 months)
 nhor <- 12 
-# Forecasting
+# Forecasting for 2024
 pred_vec2var_ca.jo2024 <- predict(vec2var_ca.jo2023, n.ahead=nhor)
 ```
 
@@ -169,20 +169,22 @@ Compare actual and forecasted 2024 lead_STF_Real
 Calculate Mean Absolute Error for 2024
 
 ```{r}
-#Forecast2024 <- pred_vec2var_ca.jo2024$fcst$FinalData.Lead_STF_Real[,1]
-Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] # Predicts log(Lead_STF_Real) from ldf2023
-#Forecast2024_expo <- exp(Forecast2024) 
-
-
+# Forecast2024 <- pred_vec2var_ca.jo2024$fcst$FinalData.lead_STF_Real[,1] # returns NULL
+Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] # imported manually from RStudio
 Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "Lead_STF_Real"]
+
+AE <- abs(Forecast2024 - Actual2024)
+MAE <- mean(AE[,1])
+
+#Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] # Predicts log(Lead_STF_Real) from ldf2023
+#Forecast2024_expo <- exp(Forecast2024) # Exponentiation of the forecast to undo log() function
+
 #Actual2024 <- ldf$Lead_STF_Real[FinalData$year == 2024]
-#Actual2024_expo <- exp(Actual2024) 
+#Actual2024_expo <- exp(Actual2024) # Exponentiation of the observations to undo log() function
 
 #round(Actual2024, 4) == round(ldf$Lead_STF_Real[FinalData$year==2024],4)
 #round(Actual2024_expo, 4) == round(FinalData$Lead_STF_Real[FinalData$year == 2024], 4)
 
-AE <- abs(Forecast2024 - Actual2024)
-MAE <- mean(AE[,1])
 #MAE <- mean(AE)
 MAE
 
@@ -211,6 +213,8 @@ Forecast2025 <- Forecast2025 |> rename(Log_Lead_STF_Real_2025 = `pred_vec2var_ca
 
 # One column for log(sales tax) and a column for reversing log()
 Forecast2025 <- Forecast2025 |> mutate(Lead_STF_Real_2025 = exp(Log_Lead_STF_Real_2025))
+Forecast2025$Log_Lead_STF_Real_2025 <- Forecast2025$Log_Lead_STF_Real_2025 * (4.25/3.85)
+Forecast2025$Lead_STF_Real_2025 <- Forecast2025$Lead_STF_Real_2025 * (4.25/3.85)
 View(Forecast2025)
 #write_csv(Forecast2025, "Data/Forecast2025.csv")
 ```

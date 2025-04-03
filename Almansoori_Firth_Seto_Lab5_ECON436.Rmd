@@ -204,7 +204,7 @@ Play with the variables included in your model and with the number of months inc
 ```{r}
 # vec2var: Transform a VECM to VAR in levels
 # This is the original model, using all the data
-vec2var_ca.jo <- vec2var(Johansen, r=8)
+vec2var_ca.jo <- vec2var(Johansen, r=9)
 # forecasting horizon
 nhor <- 10 
 # Forecasting 2025 (10 observations)
@@ -214,6 +214,7 @@ Forecast2025 <- Forecast2025 |> rename(Log_Lead_STF_Real_2025 = `pred_vec2var_ca
 
 # One column for log(sales tax) and a column for reversing log()
 Forecast2025 <- Forecast2025 |> mutate(Lead_STF_Real_2025 = exp(Log_Lead_STF_Real_2025))
+# Undo adjustment
 Forecast2025$Log_Lead_STF_Real_2025 <- Forecast2025$Log_Lead_STF_Real_2025 * (4.25/3.85)
 Forecast2025$Lead_STF_Real_2025 <- Forecast2025$Lead_STF_Real_2025 * (4.25/3.85)
 View(Forecast2025)

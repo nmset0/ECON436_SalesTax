@@ -42,7 +42,7 @@ library(vars)
 ```{r}
 # Input the sheet "Monthly" of the file "FinalData.xlsx
 FinalData <- read_excel("~/ECON436_SalesTax/Data/FinalData.xlsx", sheet = 1)
-FinalData$Lead_STF_Real <- FinalData$Lead_STF_Real* (3.85/4.25)
+FinalData$Lead_STF_Real <- FinalData$Lead_STF_Real * (3.85/4.25)
 FinalData$EDUHS[1:12] <- FinalData$EDUHS[1:12] - 5
 FinalData$SG[1:12] <- FinalData$SG[1:12] + 5
 FinalData <- FinalData[-nrow(FinalData),]
@@ -170,12 +170,12 @@ Calculate Mean Absolute Error for 2024
 ```{r}
 #Forecast2024 <- pred_vec2var_ca.jo2024$fcst$FinalData.Lead_STF_Real[,1]
 Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] # Predicts log(Lead_STF_Real) from ldf2023
-Forecast2024_unLog <- exp(Forecast2024)
+Forecast2024_unLog <- exp(Forecast2024) 
 
 # Since we're using ldf/ldf2023, it doesn't make sense to take the difference between log(sales tax) from ldf and sales tax from FinalData. We can convert the values later.
 #Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "Lead_STF_Real"]
 Actual2024 <- ldf$Lead_STF_Real[FinalData$year == 2024]
-Actual2024_unLog <- exp(Actual2024)
+Actual2024_unLog <- exp(Actual2024) 
 
 round(Actual2024, 4) == round(ldf$Lead_STF_Real[FinalData$year==2024],4)
 round(Actual2024_unLog, 4) == round(FinalData$Lead_STF_Real[FinalData$year == 2024], 4)
@@ -187,7 +187,6 @@ MAE
 
 AE_unLog <- abs(Forecast2024_unLog-Actual2024_unLog)
 MAE_unLog <- mean(AE_unLog)
-MAE_unLog
 ```
 
 You can redo steps A-D many times until you find the model with the lowest MAE. 
@@ -206,8 +205,9 @@ nhor <- 10
 # Forecasting 2025 (10 observations)
 pred_vec2var_ca.jo <- predict(vec2var_ca.jo, n.ahead=nhor)
 Forecast2025 <- as.data.frame(pred_vec2var_ca.jo[["fcst"]][["Lead_STF_Real"]][,1])
-Forecast2025 <- Forecast2025 |> rename(Lead_STF_Real_2025 = `pred_vec2var_ca.jo[["fcst"]][["Lead_STF_Real"]][, 1]`)
+Forecast2025 <- Forecast2025 |> rename(Log_Lead_STF_Real_2025 = `pred_vec2var_ca.jo[["fcst"]][["Lead_STF_Real"]][, 1]`)
+
 # One column for log(sales tax) and a column for reversing log()
-Forecast2025 <- Forecast2025 |> mutate(Exp_Lead_STF_Real_2025 = exp(Lead_STF_Real_2025))
+Forecast2025 <- Forecast2025 |> mutate(Lead_STF_Real_2025 = exp(Log_Lead_STF_Real_2025))
 #write_csv(Forecast2025, "Data/Forecast2025.csv")
 ```

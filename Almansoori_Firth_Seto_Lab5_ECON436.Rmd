@@ -13,17 +13,10 @@ editor_options:
 #========================================================
 
 1.Set up working directory and clean global environment. 
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
-# clean existing variables
-rm(list=ls())
-```
-
-
+$\\$
 2.Load required libraries (to read excel files, to manipulate dataframes, to plot time series using ts.plot)
 
-```{r}
+```{r include = FALSE}
 library(readxl)
 library(tidyr)
 library(lubridate)
@@ -33,6 +26,13 @@ library(graphics)
 library(urca) # For ca.jo
 library(tsDyn) # For VECM
 library(vars)
+library(glmnet)
+library(car) # For VIF
+library(knitr)
+library(formatR)
+opts_chunk$set(echo = TRUE, warning = F, message = F, tidy = T)
+# clean existing variables
+rm(list=ls())
 ```
 
 #========================================================

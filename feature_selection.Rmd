@@ -1,0 +1,256 @@
+---
+  title: "Lab 5"
+author: "Abdulla Almansoori, Alexander Firth, Nathan Seto"
+date: "`r Sys.Date()`"
+output: pdf_document
+editor_options: 
+  markdown: 
+  wrap: 72
+---
+
+#========================================================
+# A. Set up
+#========================================================
+
+```{r include = FALSE}
+library(readxl)
+library(tidyr)
+library(lubridate)
+library(dplyr)
+library(readr)
+library(graphics)
+library(urca) # For ca.jo
+library(tsDyn) # For VECM
+library(vars)
+library(randomForest)
+library(knitr)
+library(formatR)
+opts_chunk$set(echo = TRUE, warning = F, message = F, tidy = T)
+# clean existing variables
+rm(list=ls())
+```
+
+#========================================================
+# B. Define model variables and perform feature selection
+#========================================================
+
+```{r}
+# Input the sheet "Monthly" of the file "FinalData.xlsx
+FinalData <- read_excel("~/ECON436_SalesTax/Data/FinalData.xlsx", sheet = 1)
+# Employment data
+Manufacturing <- read_excel("~/ECON436_SalesTax/Data/Manufacturing.xlsx")
+Food_accomidation <- read_excel("~/ECON436_SalesTax/Data/Food and accomidation.xlsx")
+retailemployees <- read_excel("~/ECON436_SalesTax/Data/retail employees.xlsx")
+Transportation <- read_excel("~/ECON436_SalesTax/Data/Transportation.xlsx")
+TrafficVolume <- read_excel("~/ECON436_SalesTax/Data/TrafficVolume.xlsx") 
+
+# Traffic data from 
+# https://dtdapps.coloradodot.info/otis/TrafficData#ui/0/0/1/station/000127/criteria/27425//false/true/
+
+FinalData$Lead_STF_Real <- FinalData$Lead_STF_Real* (3.85/4.25)
+FinalData$EDUHS[1:12] <- FinalData$EDUHS[1:12] - 5
+FinalData$SG[1:12] <- FinalData$SG[1:12] + 5
+FinalData <- FinalData[-nrow(FinalData),]
+
+TrafficVolume_clean <- TrafficVolume[TrafficVolume$Year >= 2012 & TrafficVolume$Year <= 2024, ]
+TrafficVolume_clean <- TrafficVolume_clean[, -c(1, 15)] |> arrange(Year)
+
+long_Trans <- Transportation |> 
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "transportation_employment") |> 
+  mutate(Month = match(Month, month.abb), .before = Month)
+
+long_Retail <- retailemployees |> 
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "RT_employment") |> 
+  mutate(Month = match(Month, month.abb), .before = Month)
+
+long_Food <- Food_accomidation |> 
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "AFS_employment") |> 
+  mutate(Month = match(Month, month.abb), .before = Month)
+
+long_Manf <- Manufacturing |> 
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "MAN_employment") |> 
+  mutate(Month = match(Month, month.abb), .before = Month)
+
+# Traffic data
+long_Traffic <- TrafficVolume_clean |>
+  pivot_longer(cols = -Year, names_to = "Month", values_to = "Value") |>
+  mutate(
+    Month = match(Month, month.abb),
+    Month = as.Date(paste(Year, Month, "01", sep = "-")),
+  ) |>
+  dplyr::select(Month, Year, Value,)
+long_Traffic <- long_Traffic |> mutate(Date = Month, .before = Month)
+long_Traffic <- long_Traffic |> mutate(Month = lubridate::month(long_Traffic$Date))
+
+# Combine all data into a single dataframe
+FinalData_new <- cbind(FinalData, 
+                       transportation_employment = long_Trans$transportation_employment, 
+                       MAN_employment= long_Manf$MAN_employment, 
+                       AFS_employment = long_Food$AFS_employment, 
+                       RT_employment = long_Retail$RT_employment,
+                       long_Traffic$Value)
+FinalData_new <- FinalData_new |> rename(traffic_frequency = `long_Traffic$Value`)
+
+FinalData_new <- FinalData_new |> 
+  mutate(month = month(FinalData$Month), .before = year) |> 
+  dplyr::select(-Month, -Licenses, -Lead_STF)
+```
+
+```{r predictorimportance}
+# Choosing predictors
+evaluate_predictor_importance <- function(num_trials) {
+  results_list <- list()
+  
+  predictor_counts <- setNames(rep(0, ncol(FinalData_new)-1), colnames(FinalData_new)[-which(names(FinalData_new) == "Lead_STF_Real")])
+  
+  for (i in 1:num_trials) {
+    # Random forest for regression
+    rf_model <- randomForest(Lead_STF_Real ~ ., data=FinalData_new, importance=TRUE)
+    
+    # Variable importance
+    importance_values <- importance(rf_model)
+    
+    # Order the variables by importance
+    importance_order <- order(importance_values[, "IncNodePurity"], decreasing = TRUE)
+    
+    # Save the order of predictor importance for this trial
+    top_10_predictors <- rownames(importance_values)[importance_order][1:10]
+    results_list[[i]] <- top_10_predictors
+    
+    predictor_counts[top_10_predictors] <- predictor_counts[top_10_predictors] + 1
+  }
+  
+  predictor_importance_counts <<- data.frame(Predictor = names(predictor_counts), Count = predictor_counts)
+  
+  predictor_importance_counts <<- predictor_importance_counts[order(predictor_importance_counts$Count, decreasing = TRUE), ]
+  
+  predictor_importance_results <<- results_list
+  
+  return(list(results = results_list, counts = predictor_importance_counts))
+}
+
+# result <- evaluate_predictor_importance(500)
+# print(result$counts)
+#
+# result <- evaluate_predictor_importance(1000)
+# print(result$counts)
+# 
+# result <- evaluate_predictor_importance(5000)
+# print(result$counts)
+# 
+# result <- evaluate_predictor_importance(10000)
+# print(result$counts)
+```
+
+
+```{r}
+# Log all variables
+df <- FinalData_new |> dplyr::select("month", "RT", "PBS", "TP", "GP", "traffic_frequency", "RT", "CPI", "PSP", "FA", "Lead_STF_Real")
+ldf <- log(df)
+
+# Create a time series object
+# CombinedTS <- ts(ldf, start = c(2012, 1), frequency = 12)
+# ts.plot(CombinedTS)
+```
+
+#========================================================
+# C. Create VECM model using data up to 2025/01
+#========================================================
+
+```{r}
+# Conduct the Johansen procedure
+Johansen <- ca.jo(ldf, ecdet="none", type="eigen", K=12) # K = number of periods in a year (4 if quarterly data, 12 if monthly data)
+summary(Johansen)
+
+# Confirm the number of cointegrating vectors based on the results of the Johansen procedure.
+# Print the matrix of cointegrating vectors.
+```
+
+```{r}
+Beta <- round(coefB(Johansen, r=9), 3) # r = number of cointegrating vectors
+Beta
+```
+
+Short run adjustment coefficients
+
+```{r vecm}
+vecm <- VECM(ldf, lag=11, r=9, estim="ML", include = "const") # lag = K-1
+summary(vecm)
+```
+
+For each vector, we need at least one adjustment speed to have the opposite sign of the corresponding cointegrating vector coefficient and be statistically significant.
+
+#========================================================
+# D. Test if model predicts 2024 data well
+#========================================================
+
+Rerun the model on data up to 2024/01
+
+```{r}
+# truncate the data by removing the 12 last observations
+numrow <- nrow(ldf)
+ldf2023 <- ldf[1:(numrow- 12),]
+# Fit the same VECM model
+Johansen2023 <- ca.jo(ldf2023, ecdet="none", type="eigen", K=12)
+summary(Johansen2023)
+```
+
+Forecast 2024 data
+
+```{r}
+# vec2var: Transform a VECM to VAR in levels
+vec2var_ca.jo2023 <- vec2var(Johansen2023, r=7)
+# forecasting horizon
+nhor <- 12 
+# Forecasting
+pred_vec2var_ca.jo2024 <- predict(vec2var_ca.jo2023, n.ahead=nhor)
+```
+
+Compare actual and forecasted 2024 lead_STF_Real
+Calculate Mean Absolute Error for 2024
+
+```{r}
+#Forecast2024 <- pred_vec2var_ca.jo2024$fcst$FinalData.Lead_STF_Real[,1]
+Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] # Predicts log(Lead_STF_Real) from ldf2023
+Forecast2024_unLog <- exp(Forecast2024)
+
+# Since we're using ldf/ldf2023, it doesn't make sense to take the difference between log(sales tax) from ldf and sales tax from FinalData. We can convert the values later.
+#Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "Lead_STF_Real"]
+Actual2024 <- ldf$Lead_STF_Real[FinalData$year == 2024]
+Actual2024_unLog <- exp(Actual2024)
+
+round(Actual2024, 4) == round(ldf$Lead_STF_Real[FinalData$year==2024],4)
+round(Actual2024_unLog, 4) == round(FinalData$Lead_STF_Real[FinalData$year == 2024], 4)
+
+AE <- abs(Forecast2024 - Actual2024)
+#MAE <- mean(AE[,1])
+MAE <- mean(AE)
+MAE
+
+AE_unLog <- abs(Forecast2024_unLog-Actual2024_unLog)
+MAE_unLog <- mean(AE_unLog)
+MAE_unLog
+```
+
+You can redo steps A-D many times until you find the model with the lowest MAE. 
+Play with the variables included in your model and with the number of months included in your dataset. Try including data starting in 2013, or in 2014, or later, instead of 2012, and see if you get better predictions.
+
+#========================================================
+# E. Forecast lead_STF_Real for the months 2/25 to 11/25 and save it.
+#========================================================
+
+```{r}
+# vec2var: Transform a VECM to VAR in levels
+# This is the original model, using all the data
+vec2var_ca.jo <- vec2var(Johansen, r=8)
+# forecasting horizon
+nhor <- 10 
+# Forecasting 2025 (10 observations)
+pred_vec2var_ca.jo <- predict(vec2var_ca.jo, n.ahead=nhor)
+Forecast2025 <- as.data.frame(pred_vec2var_ca.jo[["fcst"]][["Lead_STF_Real"]][,1])
+Forecast2025 <- Forecast2025 |> rename(Lead_STF_Real_2025 = `pred_vec2var_ca.jo[["fcst"]][["Lead_STF_Real"]][, 1]`)
+# One column for log(sales tax) and a column for reversing log()
+Forecast2025 <- Forecast2025 |> mutate(Exp_Lead_STF_Real_2025 = exp(Lead_STF_Real_2025))
+Forecast2025
+#write_csv(Forecast2025, "Data/Forecast2025.csv")
+```

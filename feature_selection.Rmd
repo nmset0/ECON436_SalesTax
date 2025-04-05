@@ -146,6 +146,9 @@ evaluate_predictor_importance <- function(num_trials) {
 ```{r}
 # Log all variables
 df <- FinalData_new |> dplyr::select("month", "RT", "PBS", "TP", "GP", "traffic_frequency", "RT", "CPI", "PSP", "FA", "Lead_STF_Real")
+
+df <- FinalData_new |> dplyr::select("TTU", "CPI", "RT_employment", "traffic_frequency", "PBS", "Lead_STF_Real")
+
 ldf <- log(df)
 
 # Create a time series object
@@ -167,14 +170,14 @@ summary(Johansen)
 ```
 
 ```{r}
-Beta <- round(coefB(Johansen, r=9), 3) # r = number of cointegrating vectors
+Beta <- round(coefB(Johansen, r=3), 3) # r = number of cointegrating vectors
 Beta
 ```
 
 Short run adjustment coefficients
 
 ```{r vecm}
-vecm <- VECM(ldf, lag=11, r=9, estim="ML", include = "const") # lag = K-1
+vecm <- VECM(ldf, lag=11, r=3, estim="ML", include = "const") # lag = K-1
 summary(vecm)
 ```
 
@@ -199,7 +202,7 @@ Forecast 2024 data
 
 ```{r}
 # vec2var: Transform a VECM to VAR in levels
-vec2var_ca.jo2023 <- vec2var(Johansen2023, r=7)
+vec2var_ca.jo2023 <- vec2var(Johansen2023, r=2)
 # forecasting horizon
 nhor <- 12 
 # Forecasting
@@ -215,8 +218,8 @@ Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] # Predic
 Forecast2024_unLog <- exp(Forecast2024)
 
 # Since we're using ldf/ldf2023, it doesn't make sense to take the difference between log(sales tax) from ldf and sales tax from FinalData. We can convert the values later.
-#Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "Lead_STF_Real"]
-Actual2024 <- ldf$Lead_STF_Real[FinalData$year == 2024]
+Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "Lead_STF_Real"]
+#Actual2024 <- ldf$Lead_STF_Real[FinalData$year == 2024]
 Actual2024_unLog <- exp(Actual2024)
 
 round(Actual2024, 4) == round(ldf$Lead_STF_Real[FinalData$year==2024],4)
@@ -242,7 +245,7 @@ Play with the variables included in your model and with the number of months inc
 ```{r}
 # vec2var: Transform a VECM to VAR in levels
 # This is the original model, using all the data
-vec2var_ca.jo <- vec2var(Johansen, r=8)
+vec2var_ca.jo <- vec2var(Johansen, r=3)
 # forecasting horizon
 nhor <- 10 
 # Forecasting 2025 (10 observations)
@@ -252,5 +255,5 @@ Forecast2025 <- Forecast2025 |> rename(Lead_STF_Real_2025 = `pred_vec2var_ca.jo[
 # One column for log(sales tax) and a column for reversing log()
 Forecast2025 <- Forecast2025 |> mutate(Exp_Lead_STF_Real_2025 = exp(Lead_STF_Real_2025))
 Forecast2025
-#write_csv(Forecast2025, "Data/Forecast2025.csv")
+#write_csv(Forecast2025, "Data/Forecast2025_2.csv")
 ```

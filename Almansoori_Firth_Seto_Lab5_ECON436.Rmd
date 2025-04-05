@@ -175,7 +175,6 @@ Actual2024 <- FinalData[(nrow(FinalData) - 11): nrow(FinalData), "Lead_STF_Real"
 
 AE <- abs(Forecast2024 - Actual2024)
 MAE <- mean(AE[,1])
-MAE
 
 Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] # Predicts log(Lead_STF_Real) from ldf2023
 Forecast2024_expo <- exp(Forecast2024) # Exponentiation of the forecast to undo log() function
@@ -185,6 +184,9 @@ Actual2024_expo <- exp(Actual2024) # Exponentiation of the observations to undo 
 
 round(Actual2024, 4) == round(ldf$Lead_STF_Real[FinalData$year==2024],4)
 round(Actual2024_expo, 4) == round(FinalData$Lead_STF_Real[FinalData$year == 2024], 4)
+
+
+MAE
 
 mae <- mean(AE)
 AE_expo <- abs(Forecast2024_expo-Actual2024_expo)

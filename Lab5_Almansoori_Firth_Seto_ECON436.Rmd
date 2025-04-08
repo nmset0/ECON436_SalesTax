@@ -216,7 +216,6 @@ Forecast2025 <- Forecast2025 |> rename(Log_Lead_STF_Real_2025 = `pred_vec2var_ca
 Forecast2025 <- Forecast2025 |> mutate(Lead_STF_Real_2025 = exp(Log_Lead_STF_Real_2025))
 # Undo adjustment 
 
-# TODO: only for 2024
 Forecast2025$Log_Lead_STF_Real_2025 <- Forecast2025$Log_Lead_STF_Real_2025 * (4.35/3.85)
 Forecast2025$Lead_STF_Real_2025 <- Forecast2025$Lead_STF_Real_2025 * (4.35/3.85)
 

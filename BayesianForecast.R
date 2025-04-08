@@ -18,10 +18,13 @@ ldf <- log(FinalData_2)
 numrow <- nrow(ldf)
 ldf2023 <- ldf[1:(numrow- 12),]
 
+mu0 <- mean(ldf2023$Lead_STF_Real)
+sd0 <- sd(ldf2023$Lead_STF_Real)
+
 ts.object_2023 <- ts(ldf2023$Lead_STF_Real, start = c(2012, 1), frequency = 12)
 
 sf_2023 <- stan_sarima(ts = ts.object_2023, order = c(0,0,0), seasonal = c(1,1,1),
-                   prior_mu0 = student(mu = 0, sd = 1, df = nrow(ldf2023)-1), chains = 5)
+                   prior_mu0 = student(mu = mu0, sd = mu0, df = nrow(ldf2023)-1), chains = 5)
 
 # Bayesian forecasting
 Stan_SalesTax_Forecast <- forecast(sf_2023, h = 12)

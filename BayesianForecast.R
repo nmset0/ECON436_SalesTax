@@ -8,7 +8,7 @@ library(bayesforecast)
 FinalData_raw <- read_excel("Data/FinalData.xlsx")
   FinalData_1 <- FinalData_raw |> dplyr::select(-Licenses)
     FinalData_1$Month <- month(FinalData_1$Month)
-      FinalData_1$Lead_STF_Real <- FinalData_1$Lead_STF_Real * (3.85/4.25)
+      FinalData_1$Lead_STF_Real <- FinalData_1$Lead_STF_Real * (3.85/4.35)
         FinalData_1$EDUHS[1:12] <- FinalData_1$EDUHS[1:12] - 5
           FinalData_1$SG[1:12] <- FinalData_1$SG[1:12] + 5
             FinalData_2 <- FinalData_1[-nrow(FinalData_1),]
@@ -38,6 +38,7 @@ Actual2024 <- FinalData_1[(nrow(FinalData_1) - 11): nrow(FinalData_1), "Lead_STF
 df2024 <- cbind(Forecast2024, Actual2024)
 df2024$AE <- abs(df2024$Forecast2024 - df2024$Lead_STF_Real)
 
+
 AE <- abs(Forecast2024 - Actual2024)
 MAE <- mean(AE[1,])
 cat("MAE:", round(MAE, 6), "\n")
@@ -46,7 +47,7 @@ knitr::kable(df2024)
 
 # 2025 Forecast
 FinalData_3 <- FinalData_raw |> dplyr::select(-1) |> dplyr::select(-Licenses, -Lead_STF)
-  FinalData_3$Lead_STF_Real <- FinalData_3$Lead_STF_Real * (3.85/4.25)
+  FinalData_3$Lead_STF_Real <- FinalData_3$Lead_STF_Real * (3.85/4.35)
     FinalData_3$EDUHS[1:12] <- FinalData_3$EDUHS[1:12] - 5
       FinalData_3$SG[1:12] <- FinalData_3$SG[1:12] + 5
 
@@ -64,10 +65,12 @@ Stan_SalesTax_Forecast_2025$`Point Forecast` <- exp(Stan_SalesTax_Forecast_2025$
 
 Forecast2025 <- Stan_SalesTax_Forecast_2025[,1]
 Forecast2025 <- as.data.frame(Forecast2025)
-Forecast2025 <- Forecast2025 * (4.25/3.85)
-Forecast2025 <- Forecast2025 |> mutate(Month = 2:12, .before = Forecast2025)
+Forecast2025 <- Forecast2025 * (4.35/3.85)
+#Forecast2025 <- Forecast2025 |> mutate(Month = 2:12, .before = Forecast2025)
+knitr::kable(Forecast2025)
+write.csv(Forecast2025, file = "Data/Forecast2025_2.csv")
 
-forecast_plot <- autoplot(Stan_SalesTax_Forecast)
+forecast_plot <- autoplot(Stan_SalesTax_Forecast, ylab = "Log Lead_STF_Real")
 forecast_plot
 
 

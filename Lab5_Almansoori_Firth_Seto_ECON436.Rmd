@@ -42,7 +42,7 @@ rm(list=ls())
 ```{r}
 # Input the sheet "Monthly" of the file "FinalData.xlsx
 FinalData <- read_excel("~/ECON436_SalesTax/Data/FinalData.xlsx", sheet = 1)
-FinalData$Lead_STF_Real <- FinalData$Lead_STF_Real * (3.85/4.25)
+FinalData$Lead_STF_Real <- FinalData$Lead_STF_Real * (3.85/4.35)
 FinalData$SG[1:12]<-FinalData$SG[1:12]+5
 FinalData$G[1:12]<-FinalData$G[1:12]+5
 FinalData$EDUHS[1:12]<-FinalData$EDUHS[1:12]-5
@@ -215,10 +215,12 @@ Forecast2025 <- Forecast2025 |> rename(Log_Lead_STF_Real_2025 = `pred_vec2var_ca
 # One column for log(sales tax) and a column for reversing log()
 Forecast2025 <- Forecast2025 |> mutate(Lead_STF_Real_2025 = exp(Log_Lead_STF_Real_2025))
 # Undo adjustment
-Forecast2025$Log_Lead_STF_Real_2025 <- Forecast2025$Log_Lead_STF_Real_2025 * (4.25/3.85)
-Forecast2025$Lead_STF_Real_2025 <- Forecast2025$Lead_STF_Real_2025 * (4.25/3.85)
+Forecast2025$Log_Lead_STF_Real_2025 <- Forecast2025$Log_Lead_STF_Real_2025 * (4.35/3.85)
+Forecast2025$Lead_STF_Real_2025 <- Forecast2025$Lead_STF_Real_2025 * (4.35/3.85)
+
+
 print(Forecast2025)
-#write_csv(Forecast2025, "Data/Forecast2025.csv")
+write_csv(Forecast2025, "Data/Forecast2025.csv")
 ```
 
 

@@ -8,7 +8,7 @@ library(bayesforecast)
 FinalData_raw <- read_excel("Data/FinalData.xlsx")
   FinalData_1 <- FinalData_raw |> dplyr::select(-Licenses)
     FinalData_1$Month <- month(FinalData_1$Month)
-      FinalData_1$Lead_STF_Real <- FinalData_1$Lead_STF_Real * (3.85/4.35)
+      FinalData_1$Lead_STF_Real[FinalData_1$year == 2024] <- FinalData_1$Lead_STF_Real[FinalData_1$year == 2024] * (3.85/4.35)
         FinalData_1$EDUHS[1:12] <- FinalData_1$EDUHS[1:12] - 5
           FinalData_1$SG[1:12] <- FinalData_1$SG[1:12] + 5
             FinalData_2 <- FinalData_1[-nrow(FinalData_1),]
@@ -50,7 +50,7 @@ knitr::kable(df2024)
 
 # 2025 Forecast
 FinalData_3 <- FinalData_raw |> dplyr::select(-1) |> dplyr::select(-Licenses, -Lead_STF)
-  FinalData_3$Lead_STF_Real <- FinalData_3$Lead_STF_Real * (3.85/4.35)
+  FinalData_3$Lead_STF_Real[FinalData_3$year == 2024] <- FinalData_3$Lead_STF_Real[FinalData_3$year == 2024] * (3.85/4.35)
     FinalData_3$EDUHS[1:12] <- FinalData_3$EDUHS[1:12] - 5
       FinalData_3$SG[1:12] <- FinalData_3$SG[1:12] + 5
 

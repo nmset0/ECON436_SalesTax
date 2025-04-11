@@ -23,7 +23,7 @@ sd0 <- sd(ldf2023$Lead_STF_Real)
 
 ts.object_2023 <- ts(ldf2023$Lead_STF_Real, start = c(2012, 1), frequency = 12)
 
-sf_2023 <- stan_sarima(ts = ts.object_2023, order = c(0,0,0), seasonal = c(1,1,1),
+sf_2023 <- stan_sarima(ts = ts.object_2023, order = c(0,0,0), seasonal = c(0,0,0),
                    prior_mu0 = student(mu = mu0, sd = mu0, df = nrow(ldf2023)-1), chains = 5)
 
 # Bayesian forecasting

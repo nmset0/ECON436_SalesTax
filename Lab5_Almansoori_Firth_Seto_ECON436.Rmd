@@ -47,7 +47,7 @@ FinalData$Lead_STF_Real[FinalData$year == 2025 & FinalData$Year == 1] <- FinalDa
 FinalData$SG[1:12]<-FinalData$SG[1:12]+5
 FinalData$G[1:12]<-FinalData$G[1:12]+5
 FinalData$EDUHS[1:12]<-FinalData$EDUHS[1:12]-5
-FinalData <- FinalData[-nrow(FinalData),]
+FinalData_1 <- FinalData[-nrow(FinalData),]
 
 Manufacturing <- read_excel("~/ECON436_SalesTax/Data/Manufacturing.xlsx")
 Food_accomidation <- read_excel("~/ECON436_SalesTax/Data/Food and accomidation.xlsx")
@@ -91,7 +91,7 @@ long_Traffic <- long_Traffic |> mutate(Month = lubridate::month(long_Traffic$Dat
 # Then add additional data you want to add (licenses and/or data you think is cointegrated with the sales tax data).
 # Then add the sales tax data.
 # Log all variables
-df <- cbind(FinalData, 
+df <- cbind(FinalData_1, 
             transportation_employment = long_Trans$transportation_employment, 
             MAN_employment= long_Manf$MAN_employment, 
             AFS_employment = long_Food$AFS_employment, 

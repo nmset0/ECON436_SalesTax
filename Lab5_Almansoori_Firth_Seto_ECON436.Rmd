@@ -246,12 +246,42 @@ frame <- FinalData |> dplyr::select(year, Month, Lead_STF_Real)
 frame <- frame[-c(159:167),]
 frame$year[158] = 2025
 colnames(Forecast2025) <- colnames(frame)
-frame <- rbind(frame, Forecast2025)
+frame <- rbind(frame, Forecast2025[-1,])
 
-framets <- ts(frame$Lead_STF_Real, start = c(2012, 1), frequency = 12)
-ts.plot(framets, gpars = list(ylab = "Lead_STF_Real"))
+frame$lower_bound <- frame$upper_bound <- NA
+
+sd <- sd(frame$Lead_STF_Real)
+se <- sd / sqrt(nrow(frame))
+confidence_level <- 0.95
+z_score <- qnorm(0.975)
+for (i in 1:nrow(frame)) {
+  mean <-  frame$Lead_STF_Real[i]
+  
+  frame$lower_bound[i] <- mean - z_score * se
+  frame$upper_bound[i] <- mean + z_score * se
+}
+
+#frame <- frame |> filter(year >= 2024)
+lead_stf_real_ts <- ts(frame$Lead_STF_Real, start = c(frame$year[1], frame$Month[1]), frequency = 12)
+upper_bound_ts <- ts(frame$upper_bound, start = c(frame$year[1], frame$Month[1]), frequency = 12)
+lower_bound_ts <- ts(frame$lower_bound, start = c(frame$year[1], frame$Month[1]), frequency = 12)
 
 
+framets <- cbind(lead_stf_real_ts, upper_bound_ts, lower_bound_ts)
 
+# Plot the time series
+ts.plot(framets, 
+        gpars = list(col = c("black", "red", "blue"),  # Colors for the lines
+                     lty = c("solid", "dashed", "dashed"),  # Line types
+                     ylab = "Lead STF Real with Confidence Intervals"))
+
+# Add a legend
+legend("topleft", 
+       legend = c("Lead STF Real", "Upper Bound", "Lower Bound"), 
+       col = c("black", "red", "blue"), 
+       lty = c("solid", "dashed", "dashed")) 
+       
+       
+       
 ```
 

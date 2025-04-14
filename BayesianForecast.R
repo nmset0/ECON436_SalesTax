@@ -5,16 +5,18 @@ library(readxl)
 library(lubridate)
 library(bayesforecast)
 
-FinalData_raw <- read_excel("Data/FinalData.xlsx")
-  FinalData_1 <- FinalData_raw |> dplyr::select(-Licenses)
-    FinalData_1$Month <- month(FinalData_1$Month)
-      FinalData_1$Lead_STF_Real[FinalData_1$year == 2024] <- FinalData_1$Lead_STF_Real[FinalData_1$year == 2024] * (3.85/4.35)
-        FinalData_1$EDUHS[1:12] <- FinalData_1$EDUHS[1:12] - 5
-          FinalData_1$SG[1:12] <- FinalData_1$SG[1:12] + 5
-            FinalData_2 <- FinalData_1[-nrow(FinalData_1),]
+FinalData_raw <- read_excel("~/ECON436_SalesTax/Data/FinalData.xlsx", sheet = 1)
+FinalData_raw$Lead_STF_Real[FinalData_raw$year == 2024 & FinalData_raw$Year != 12] <- FinalData_raw$Lead_STF_Real[FinalData_raw$year == 2024 & FinalData_raw$Year != 12] * (3.85/4.35)
+FinalData_raw$Lead_STF_Real[FinalData_raw$year == 2025 & FinalData_raw$Year == 1] <- FinalData_raw$Lead_STF_Real[FinalData_raw$year == 2025 & FinalData_raw$Year == 1] * (3.85/4.35)
+FinalData_raw$SG[1:12]<-FinalData_raw$SG[1:12]+5
+FinalData_raw$G[1:12]<-FinalData_raw$G[1:12]+5
+FinalData_raw$EDUHS[1:12]<-FinalData_raw$EDUHS[1:12]-5
+
+FinalData_1 <- FinalData_raw[1:158,]
+FinalData_1$Month <- month(FinalData_1$Month)
 
 # 2024
-ldf <- log(FinalData_2)
+ldf <- log(FinalData_1)
 numrow <- nrow(ldf)
 ldf2023 <- ldf[1:(numrow- 12),]
 
@@ -24,7 +26,7 @@ sd0 <- sd(ldf2023$Lead_STF_Real)
 ts.object_2023 <- ts(ldf2023$Lead_STF_Real, start = c(2012, 1), frequency = 12)
 
 sf_2023 <- stan_sarima(ts = ts.object_2023, order = c(0,0,0), seasonal = c(0,0,0),
-                   prior_mu0 = student(mu = mu0, sd = mu0, df = nrow(ldf2023)-1), chains = 5)
+                       prior_mu0 = student(mu = mu0, sd = mu0, df = nrow(ldf2023)-1), chains = 5)
 
 # Bayesian forecasting
 Stan_SalesTax_Forecast <- forecast(sf_2023, h = 12)
@@ -34,7 +36,7 @@ Stan_SalesTax_Forecast_2024$`Point Forecast` <- exp(Stan_SalesTax_Forecast_2024$
 
 Forecast2024 <- Stan_SalesTax_Forecast_2024[,1]
 Forecast2024 <- as.data.frame(Forecast2024)
-Forecast2024 <- Forecast2024 * (4.25/3.85)
+Forecast2024 <- Forecast2024 * (4.35/3.85)
 
 Actual2024 <- FinalData_1[(nrow(FinalData_1) - 11): nrow(FinalData_1), "Lead_STF_Real"]
 
@@ -49,29 +51,37 @@ knitr::kable(df2024)
 
 
 # 2025 Forecast
-FinalData_3 <- FinalData_raw |> dplyr::select(-1) |> dplyr::select(-Licenses, -Lead_STF)
-  FinalData_3$Lead_STF_Real[FinalData_3$year == 2024] <- FinalData_3$Lead_STF_Real[FinalData_3$year == 2024] * (3.85/4.35)
-    FinalData_3$EDUHS[1:12] <- FinalData_3$EDUHS[1:12] - 5
-      FinalData_3$SG[1:12] <- FinalData_3$SG[1:12] + 5
 
+
+FinalData_3 <- FinalData_raw |> dplyr::select(-1) |> dplyr::select(-Licenses, -Lead_STF)
+FinalData_3$Lead_STF_Real[FinalData_3$year == 2024 & FinalData_3$Year != 12] <- FinalData_3$Lead_STF_Real[FinalData_3$year == 2024 & FinalData_3$Year != 12] * (3.85/4.35)
+FinalData_3$Lead_STF_Real[FinalData_3$year == 2025 & FinalData_3$Year == 1] <- FinalData_3$Lead_STF_Real[FinalData_3$year == 2025 & FinalData_3$Year == 1] * (3.85/4.35)
+FinalData_3$SG[1:12]<-FinalData_3$SG[1:12]+5
+FinalData_3$G[1:12]<-FinalData_3$G[1:12]+5
+FinalData_3$EDUHS[1:12]<-FinalData_3$EDUHS[1:12]-5
+
+FinalData_3 <- FinalData_3[1:156,]
+
+mu0 <- mean(FinalData_1$Lead_STF_Real)
+sd0 <- sd(FinalData_1$Lead_STF_Real)
 
 ldf_all <- log(FinalData_3)
 
 ts.object_2025 <- ts(ldf_all$Lead_STF_Real, start = c(2012, 1), frequency = 12)
 
 sf_2025 <- stan_sarima(ts = ts.object_2025, order = c(0,0,0), seasonal = c(1,1,1),
-                       prior_mu0 = student(mu = 0, sd = 1, df = nrow(ldf_all)-1))
+                       prior_mu0 = student(mu = mu0, sd = sd0, df = nrow(ldf_all)-1))
 # Bayesian forecasting
 Stan_SalesTax_Forecast <- forecast(sf_2025, h = 11)
 Stan_SalesTax_Forecast_2025 <- as.data.frame(Stan_SalesTax_Forecast)
-Stan_SalesTax_Forecast_2025$`Point Forecast` <- exp(Stan_SalesTax_Forecast_2025$`Point Forecast`)
+#Stan_SalesTax_Forecast_2025$`Point Forecast` <- exp(Stan_SalesTax_Forecast_2025$`Point Forecast`)
 
 Forecast2025 <- Stan_SalesTax_Forecast_2025[,1]
 Forecast2025 <- as.data.frame(Forecast2025)
 Forecast2025 <- Forecast2025 * (4.35/3.85)
 #Forecast2025 <- Forecast2025 |> mutate(Month = 2:12, .before = Forecast2025)
 knitr::kable(Forecast2025)
-write.csv(Forecast2025, file = "Data/Forecast2025_2.csv")
+#write.csv(Forecast2025, file = "Data/Forecast2025_2.csv")
 
 forecast_plot <- autoplot(Stan_SalesTax_Forecast, ylab = "Log Lead_STF_Real")
 forecast_plot
@@ -83,7 +93,7 @@ forecast_plot
 ts.object_2025_noLog <- ts(FinalData_3$Lead_STF_Real, start = c(2012, 1), frequency = 12)
 
 sf_2025noLog <- stan_sarima(ts = ts.object_2025_noLog, order = c(0,0,0), seasonal = c(1,1,1),
-                       prior_mu0 = student(mu = 0, sd = 1, df = nrow(FinalData_3)-1))
+                            prior_mu0 = student(mu = mu0, sd = sd0, df = nrow(FinalData_3)-1))
 # Bayesian forecasting
 Stan_SalesTax_Forecast <- forecast(sf_2025noLog, h = 11)
 Stan_SalesTax_Forecast_2025 <- as.data.frame(Stan_SalesTax_Forecast)
@@ -91,8 +101,22 @@ Stan_SalesTax_Forecast_2025 <- as.data.frame(Stan_SalesTax_Forecast)
 
 Forecast2025 <- Stan_SalesTax_Forecast_2025[,1]
 Forecast2025 <- as.data.frame(Forecast2025)
-Forecast2025 <- Forecast2025 * (4.25/3.85)
+Forecast2025 <- Forecast2025 * (4.35/3.85)
 
 forecast_plot <- autoplot(Stan_SalesTax_Forecast)
 forecast_plot
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -97,12 +97,14 @@ df <- cbind(FinalData_1[1:156,],
             AFS_employment = long_Food$AFS_employment, 
             RT_employment = long_Retail$RT_employment,
             long_Traffic$Value)
+
+df <- cbind(FinalData_1[1:156,], long_Traffic$Value)
 df <- df |> mutate(month = month(df$Month), .before = year)
 df <- df |> dplyr::select(-Month)
-new_df <- df |> dplyr::select("LH", "INFO","EDUHS","TTU", "FA","MAN_employment","AFS_employment","RT_employment", "long_Traffic$Value", "Lead_STF_Real")
+new_df <- df |> dplyr::select("LH", "INFO","EDUHS","TWU", "FA","MAN","AFS","RT", "long_Traffic$Value", "Lead_STF_Real")
 ldf <- log(new_df)
 ldf <- ldf |> rename(traffic_frequency = `long_Traffic$Value`)
-CombinedTS <- ts(ldf, start = c(2012, 1), frequency = 12)
+#CombinedTS <- ts(ldf, start = c(2012, 1), frequency = 12)
 #ts.plot(CombinedTS)
 
 ```
@@ -231,13 +233,13 @@ print(Forecast2025)
 
 ```{r}
 FinalData <- read_excel("~/ECON436_SalesTax/Data/FinalData.xlsx", sheet = 1)
-FinalData$Lead_STF_Real[FinalData$year == 2024 & FinalData$Year != 12] <- FinalData$Lead_STF_Real[FinalData$year == 2024 & FinalData$Year != 12] * (3.85/4.35)  
-FinalData$Lead_STF_Real[FinalData$year == 2025 & FinalData$Year == 1] <- FinalData$Lead_STF_Real[FinalData$year == 2025 & FinalData$Year == 1] * (3.85/4.35)
+FinalData$Lead_STF_Real[FinalData$year == 2024 & FinalData$Month < 12] <- FinalData$Lead_STF_Real[FinalData$year == 2024 & FinalData$year != 12] * (3.85/4.35)  
+FinalData$Lead_STF_Real[FinalData$year == 2025 & FinalData$Month == 1] <- FinalData$Lead_STF_Real[FinalData$year == 2025 & FinalData$Month == 1] * (3.85/4.35)
 FinalData$SG[1:12]<-FinalData$SG[1:12]+5
 FinalData$G[1:12]<-FinalData$G[1:12]+5
 FinalData$EDUHS[1:12]<-FinalData$EDUHS[1:12]-5
 
-Forecast2025$month = c(2:12)
+Forecast2025$month = c(1:11)
 Forecast2025$year = 2025
 Forecast2025 <- Forecast2025[,c(3,2,1)]
 
@@ -251,7 +253,8 @@ frame <- rbind(frame, Forecast2025)
 framets <- ts(frame$Lead_STF_Real, start = c(2012, 1), frequency = 12)
 ts.plot(framets, gpars = list(ylab = "Lead_STF_Real"))
 
-
+par(mai=rep(0.4, 4)); plot(pred_vec2var_ca.jo)
+par(mai=rep(0.4, 4)); fanchart(pred_vec2var_ca.jo)
 
 ```
 

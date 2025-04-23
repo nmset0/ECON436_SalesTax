@@ -1,18 +1,36 @@
-# Abdulla Almansoori, Alexander Firth, and Nathan Seto
+---
+title: "Sales Tax Forecasting"
+subtitle: "ECON436, Colorado State University"
+author: "Abdulla Almansoori, Alexander Firth, Nathan Seto"
+date: "2025-04-22"
+output: pdf_document
+---
 
-
-# Packages
+```{r setup, include = FALSE}
 library(readxl)
 library(tidyverse)
-library(urca) # For ca.jo
-library(tsDyn) # For VECM
+library(urca) # For ca.jo()
+library(tsDyn) # For VECM()
 library(vars)
+library(knitr)
+library(formatR)
+opts_chunk$set(warning = FALSE, message = FALSE, echo = TRUE, eval = TRUE, tidy = TRUE)
+```
 
-# Data
+
+### Data
+
+```{r data}
+# import
 FD_raw <- read_excel("~/ECON436_SalesTax/Data/FinalData.xlsx", sheet = 1) # BLS and Fort Collins sales tax data set
 TRAF_raw <- read_excel("~/ECON436_SalesTax/Data/TrafficVolume.xlsx") # Traffic data (external)
 # Data from https://dtdapps.coloradodot.info/otis/TrafficData#ui/0/0/1/station/000127/criteria/27425//false/true/
+```
 
+
+### Define Model Variables
+
+```{r ldf}
 FD_1 <- FD_raw[1:157,]
 
 # Prescribed Adjustments
@@ -45,47 +63,84 @@ DF_NEW <- DF_NEW |> rename(traffic_frequency = `TRAF_long$Value`) # rename colum
 
 # Log all variables
 LDF <- log(DF_NEW)
+```
 
 
-# Cointegrating vectors
-# Conduct the Johansen procedure
+### Conduct the Johansen Procedure
+
+```{r johansen}
+# Johansen procedure
 JOH <- ca.jo(LDF, ecdet="none", type="eigen", K=12) # K = number of periods in a year (4 if quarterly data, 12 if monthly data)
 summary(JOH)
+```
 
-BETA <- round(coefB(JOH, r=6), 3) # r = number of cointegrating vectors
-BETA
+Confirm the number of cointegrating vectors based on the results of the Johansen procedure.
 
-# Short-run adjustment coefficients
-VECM <- VECM(LDF, lag=11, r=6, estim="ML", include = "const") # lag = K-1
+
+### Cointegrating Vectors
+
+```{r beta}
+BETA <- round(coefB(JOH, r = 6), 3) # r = number of cointegrating vectors
+BETA # Short run adjustment coefficients
+```
+
+
+### Create VECM Using Data Up To January 2025
+
+```{r vecm}
+VECM <- VECM(LDF, lag = 11, r = 6, estim = "ML", include = "const") # lag = K - 1
 summary(VECM)
+```
+
+For each vector, we need at least one adjustment speed to have the opposite sign of the corresponding cointegrating vector coefficient and be statistically significant.
 
 
-# Evaluate Model Performance
-# truncate the data by removing last 12 observations
-NROW <- nrow(LDF)
+### Model Evaluation
+
+
+Rerun the model on data up to January 2024.
+
+```{r test}
+NROW <- nrow(LDF) # truncate the data by removing last 12 observations
 LDF_2023 <- LDF[1:(NROW- 12),]
-# Fit the same VECM model
+
+# Fit the same VECM 
 JOH2023 <- ca.jo(LDF_2023, ecdet="none", type="eigen", K=12)
 summary(JOH2023)
+```
 
+
+Forecast 2024 data.
+
+```{r fcst2024}
 # vec2var: Transform a VECM to VAR object in levels
 vec2var_ca.jo2023 <- vec2var(JOH2023, r = 6)
+
 # forecasting horizon (12 months)
 nhor <- 12
+
 # Forecasting for 2024
 pred_vec2var_ca.jo2024 <- predict(vec2var_ca.jo2023, n.ahead = nhor)
+```
 
-Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] # imported manually from RStudio
-Actual2024 <- LDF$Lead_STF_Real[FD_1$year == 2024]
 
-AE <- abs(Forecast2024 - Actual2024)
-MAE <- mean(AE)
+Compare actual and forecasted 2024 Lead_STF_Real. Calculate mean absolute error (MAE) for 2024.
+
+```{r compare}
+Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] # Extract forecasted values
+Actual2024 <- LDF$Lead_STF_Real[FD_1$year == 2024] # Extract observed values
+
+AE <- abs(Forecast2024 - Actual2024) # Calculate individual absolute error
+MAE <- mean(AE) # Mean error
 
 round(MAE, 4)
-round(Actual2024, 4) == round(LDF$Lead_STF_Real[FD_1$year==2024], 4)
+round(Actual2024, 4) == round(LDF$Lead_STF_Real[FD_1$year==2024], 4) # Verification
+```
 
 
+### Forecast Lead_STF_Real for February through November of 2025 and save it.
 
+```{r}
 # vec2var: Transform a VECM to VAR in levels
 vec2var_ca.jo <- vec2var(JOH, r = 6)
 
@@ -108,5 +163,5 @@ print(pred_vec2var_ca.jo$fcst$Lead_STF_Real)
 # FRAME <- as.data.frame(pred_vec2var_ca.jo$fcst$Lead_STF_Real)
 # FRAME <- FRAME |> mutate(year = 2025, month = 1:11, .before = fcst)
 # write_csv(FRAME, file = "Forecast2025-3.csv")
-
+```
 

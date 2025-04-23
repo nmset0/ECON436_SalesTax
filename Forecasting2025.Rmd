@@ -2,9 +2,12 @@
 title: "Sales Tax Forecasting"
 subtitle: "ECON436, Colorado State University"
 author: "Abdulla Almansoori, Alexander Firth, Nathan Seto"
-date: "2025-04-22"
+date: "22 April 2025"
 output: pdf_document
 ---
+
+This document contains the R code that forecasts the sales tax revenue to be collected by the city of Fort Collins, Colorado in 2025. This is originally an assignment from ECON436 Economic Forecasting at Colorado State University and was completed by students Abdulla Almansoori, Alexander Firth, and Nathan Seto.
+
 
 ```{r setup, include = FALSE}
 library(readxl)
@@ -18,26 +21,30 @@ opts_chunk$set(warning = FALSE, message = FALSE, echo = TRUE, eval = TRUE, tidy 
 ```
 
 
-### Data
+## Data
 
 ```{r data}
-# import
-FD_raw <- read_excel("~/ECON436_SalesTax/Data/FinalData.xlsx", sheet = 1) # BLS and Fort Collins sales tax data set
-TRAF_raw <- read_excel("~/ECON436_SalesTax/Data/TrafficVolume.xlsx") # Traffic data (external)
-# Data from https://dtdapps.coloradodot.info/otis/TrafficData#ui/0/0/1/station/000127/criteria/27425//false/true/
+# Import
+# BLS and Fort Collins sales tax data set
+FD_raw <- read_excel("~/ECON436_SalesTax/Data/FinalData.xlsx", sheet = 1) 
+
+# Traffic data (external)
+TRAF_raw <- read_excel("~/ECON436_SalesTax/Data/TrafficVolume.xlsx") 
 ```
 
+Traffic data from [CDOT](https://dtdapps.coloradodot.info/otis/TrafficData#ui/0/0/1/station/000127/criteria/27425//false/true/).
 
-### Define Model Variables
+
+## Define Model Variables
 
 ```{r ldf}
 FD_1 <- FD_raw[1:157,]
 
 # Prescribed Adjustments
-  FD_1$Lead_STF_Real[FD_1$year == 2024] <- FD_1$Lead_STF_Real[FD_1$year == 2024] * (3.85/4.35)
-    FD_1$SG[1:12]<-FD_1$SG[1:12] + 5
-      FD_1$G[1:12]<-FD_1$G[1:12] + 5
-        FD_1$EDUHS[1:12]<-FD_1$EDUHS[1:12] - 5
+FD_1$Lead_STF_Real[FD_1$year == 2024] <- FD_1$Lead_STF_Real[FD_1$year == 2024] * (3.85/4.35)
+FD_1$SG[1:12]<-FD_1$SG[1:12] + 5
+FD_1$G[1:12]<-FD_1$G[1:12] + 5
+FD_1$EDUHS[1:12]<-FD_1$EDUHS[1:12] - 5
 
 # Cleaning traffic data
 TRAF_clean <- TRAF_raw[TRAF_raw$Year >= 2012 & TRAF_raw$Year <= 2024, ]
@@ -55,10 +62,11 @@ TRAF_long <- TRAF_long |> mutate(Month = lubridate::month(TRAF_long$Month))
 
 # Binding traffic data and FinalData
 DF <- cbind(FD_1[1:nrow(TRAF_long),], TRAF_long$Value)
-  DF <- DF |> mutate(Month = month(DF$Month))
+DF <- DF |> mutate(Month = month(DF$Month))
 
 # Selecting predictors + Lead_STF_Real
-DF_NEW <- DF |> dplyr::select("LH", "INFO","EDUHS", "MAN", "AFS", "RT", "TRAF_long$Value", "Lead_STF_Real")
+DF_NEW <- DF |> dplyr::select("LH", "INFO","EDUHS", "MAN", "AFS", 
+                              "RT", "TRAF_long$Value", "Lead_STF_Real")
 DF_NEW <- DF_NEW |> rename(traffic_frequency = `TRAF_long$Value`) # rename column
 
 # Log all variables
@@ -66,18 +74,19 @@ LDF <- log(DF_NEW)
 ```
 
 
-### Conduct the Johansen Procedure
+## Conduct the Johansen Procedure
 
 ```{r johansen}
 # Johansen procedure
-JOH <- ca.jo(LDF, ecdet="none", type="eigen", K=12) # K = number of periods in a year (4 if quarterly data, 12 if monthly data)
+JOH <- ca.jo(LDF, ecdet="none", type="eigen", K=12) 
+# K = number of periods in a year (4 if quarterly data, 12 if monthly data)
 summary(JOH)
 ```
 
 Confirm the number of cointegrating vectors based on the results of the Johansen procedure.
 
 
-### Cointegrating Vectors
+## Cointegrating Vectors
 
 ```{r beta}
 BETA <- round(coefB(JOH, r = 6), 3) # r = number of cointegrating vectors
@@ -85,17 +94,17 @@ BETA # Short run adjustment coefficients
 ```
 
 
-### Create VECM Using Data Up To January 2025
+## Create VECM Using Data Up To January 2025
 
 ```{r vecm}
 VECM <- VECM(LDF, lag = 11, r = 6, estim = "ML", include = "const") # lag = K - 1
-summary(VECM)
+# summary(VECM)
 ```
 
 For each vector, we need at least one adjustment speed to have the opposite sign of the corresponding cointegrating vector coefficient and be statistically significant.
 
 
-### Model Evaluation
+## Model Evaluation
 
 
 Rerun the model on data up to January 2024.
@@ -127,18 +136,24 @@ pred_vec2var_ca.jo2024 <- predict(vec2var_ca.jo2023, n.ahead = nhor)
 Compare actual and forecasted 2024 Lead_STF_Real. Calculate mean absolute error (MAE) for 2024.
 
 ```{r compare}
-Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] # Extract forecasted values
-Actual2024 <- LDF$Lead_STF_Real[FD_1$year == 2024] # Extract observed values
+# Extract forecasted values
+Forecast2024 <- pred_vec2var_ca.jo2024[["fcst"]][["Lead_STF_Real"]][,1] 
 
-AE <- abs(Forecast2024 - Actual2024) # Calculate individual absolute error
-MAE <- mean(AE) # Mean error
+# Extract observed values
+Actual2024 <- LDF$Lead_STF_Real[FD_1$year == 2024] 
+
+# Calculate individual absolute error
+AE <- abs(Forecast2024 - Actual2024) 
+
+# Mean error
+MAE <- mean(AE) 
 
 round(MAE, 4)
 round(Actual2024, 4) == round(LDF$Lead_STF_Real[FD_1$year==2024], 4) # Verification
 ```
 
 
-### Forecast Lead_STF_Real for February through November of 2025 and save it.
+## Forecast Lead_STF_Real for February through November of 2025 and save it.
 
 ```{r}
 # vec2var: Transform a VECM to VAR in levels

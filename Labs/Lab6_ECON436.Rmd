@@ -1,0 +1,176 @@
+---
+title: "Lab 6"
+author: "Nathan Seto"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(formatR)
+opts_chunk$set(include = TRUE, cache = TRUE, warning = FALSE, message = FALSE, tidy = TRUE)
+library(fpp2) # library including the datasets.
+options(digits=5)
+```
+
+# Ex 1
+Figure 1 shows the ACFs for 36 random numbers, 360 random numbers and 1,000 random numbers.
+
+
+a. Explain the differences among these figures. Do they all indicate that the data are white noise?
+
+
+As sample size increases, the variation decreases, and the autocorrelation value decreases. All these figures appear to be white noise.
+
+
+b. Why are the critical values at different distances from the mean of zero? Why are the autocorrelations different in each figure when they each refer to white noise?
+
+
+The values differ in distance because of the smaller variance and larger sample size. The expected value of white noise is zero, so the critical values will continue to approach zero as sample increases.
+
+
+# Ex 2
+a. Produce a time plot of the sheep population of England and Wales from 1867--1939 (data set `sheep`). Use the function ndiffs() to see how many times the time series needs to be differentiated to be stationary.
+
+```{r 2a}
+data(sheep)
+ts.plot(sheep, main = "Sheep Time Series") # time-series plot
+ndiffs(sheep) # how many times the time series needs to be differentiated to become stationary
+```
+
+The time series needs to be differentiated one time to be stationary.
+
+b. Assume you decide to fit the following model:$y_t=y_{t−1}+\phi_1(y_{t−1}−y_{t−2})+\phi_2(y_{t−2}−y_{t−3})+\phi_3(y_{t−3}−y_{t−4})+\epsilon_t$,where εt is a white noise series. What sort of ARIMA model is this (i.e., what are p, d, and q)?
+
+
+This is an ARIMA(3, 1, 0) model.
+
+
+c. By examining the ACF and PACF of the differenced data, explain why this model is appropriate.
+
+```{r 2c}
+sheep <- diff(sheep) # differencing the series 1 time
+acf(sheep, main = "Sheep ACF") # autocorrelation plot
+pacf(sheep, main = "Sheep PACF") # partial autocorrelation plot
+```
+
+The ACF yields an order of 3, and the data needs to be differenced one time.
+
+
+```{r sheepfit, echo=FALSE, cache=TRUE}
+fit <- auto.arima(sheep, seasonal = FALSE, stepwise = FALSE, approximation = FALSE)
+# fit <- Arima(sheep, order = c(3, 1, 0))
+fit$coef
+```
+
+
+d. The last five values of the series are given below:
+
+|Year              | 1935| 1936| 1937| 1938| 1939|
+|:-----------------|----:|----:|----:|----:|----:|
+|Millions of sheep | 1648| 1665| 1627| 1791| 1797|
+
+The estimated parameters are $\phi_1$=0.421, $\phi_2$=−0.202, and $\phi_3$=−0.304. Without using the forecast function, calculate forecasts for the next three years (1940–1942). 
+
+```{r 2d}
+# function to predict sheep
+predictSheep <- function(c, y1, y2, y3, y4) {
+  # calculate predictions with the provided coefficients
+  c_pred <- c + (y1 - y2) * 0.421 + (y2 - y3) * (-.202) + (y3 - y4) * (-.304) # y1 = y_{t-1}, y2 = y_{t-2}, etc.
+  return(c_pred)
+}
+
+# store predictions
+c1 <- predictSheep(1797, 1791, 1627, 1665, 1648)
+c2 <- predictSheep(c1, 1797, 1791, 1627, 1665)
+c3 <- predictSheep(c2, 1717, 1797, 1791, 1627)
+
+# print results
+cat("Predicted Number of Sheep in 1940:", round(c1), "\n")
+cat("Predicted Number of Sheep in 1941:", round(c2), "\n")
+cat("Predicted Number of Sheep in 1942:", round(c3), "\n")
+```
+
+
+e. Now fit the model in R and obtain the forecasts using the function forecast(). Are they different from yours?
+
+```{r 2e}
+forecast(fit, h = 3)
+```
+
+
+Yes, they are different from my estimations, but they are within the 95 percent interval.
+
+
+# Ex 3
+
+a. Plot the annual bituminous coal production in the United States from 1920 to 1968 (data set bicoal).Use the function ndiffs() to see how many times the time series needs to be differentiated to be stationary.
+
+```{r}
+
+```
+
+b. You decide to fit the following model to the series:yt=c+ϕ1yt−1+ϕ2yt−2+ϕ3yt−3+ϕ4yt−4+εtwhere yt is the coal production in year t and εt is a white noise series. What sort of ARIMA model is this (i.e., what are p, d, and q)?
+
+
+c. Explain why this model was chosen using the ACF and PACF.
+
+```{r}
+
+```
+
+
+d. The last five values of the series are given below.
+
+|Year              | 1964| 1965| 1966| 1967| 1968|
+|:-----------------|----:|----:|----:|----:|----:|
+|Millions of tons  | 467 | 512 | 534 | 552 | 545 |
+
+```{r bicoalfit, echo=FALSE, cache=TRUE}
+
+```
+
+Without using the `forecast` function, calculate forecasts for the next three years (1969--1971) using R.
+```{r}
+
+
+```
+
+
+
+b. Now fit the model in R and obtain the forecasts from the same model. How are they different from yours? Why?
+
+```{r}
+```
+
+
+
+## Extracredit
+
+```{r setup, include=FALSE}
+# clean existing variables
+rm(list=ls())
+# load useful libraries
+library(readxl)
+library(tidyverse)
+library(graphics) # for ts.plot
+library(forecast) # ARIMA modelling
+```
+
+Load FinalData.xlsx and create a time series ts.lSTF = log(STF_Real). Plot ts.lSTF.
+
+```{r}
+
+```
+
+a. Fit a seasonal ARIMA model using the option seasonal=TRUE. What model is identified as the best fit?
+
+```{r}
+
+```
+b.	Predict the value of log(STF_Real) for the first 11 months of 2025. Exponentiate the variables x,mean, lower,and upper and plot FC sales tax + the predictions for 2025.
+
+```{r}
+
+
+```

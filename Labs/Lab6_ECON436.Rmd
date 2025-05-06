@@ -6,10 +6,15 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
+rm(list = ls())
 library(knitr)
 library(formatR)
-opts_chunk$set(include = TRUE, cache = TRUE, warning = FALSE, message = FALSE, tidy = TRUE)
+library(readxl)
+library(tidyverse)
+library(graphics)
+library(forecast)
 library(fpp2) # library including the datasets.
+opts_chunk$set(include = TRUE, cache = TRUE, warning = FALSE, message = FALSE, tidy = TRUE)
 options(digits=5)
 ```
 
@@ -49,18 +54,18 @@ This is an ARIMA(3, 1, 0) model.
 c. By examining the ACF and PACF of the differenced data, explain why this model is appropriate.
 
 ```{r 2c}
-sheep <- diff(sheep) # differencing the series 1 time
-acf(sheep, main = "Sheep ACF") # autocorrelation plot
-pacf(sheep, main = "Sheep PACF") # partial autocorrelation plot
+sheep_diff <- diff(sheep) # differencing the series 1 time
+acf(sheep_diff, main = "Sheep ACF") # autocorrelation plot
+pacf(sheep_diff, main = "Sheep PACF") # partial autocorrelation plot
 ```
 
 The ACF yields an order of 3, and the data needs to be differenced one time.
 
 
 ```{r sheepfit, echo=FALSE, cache=TRUE}
-fit <- auto.arima(sheep, seasonal = FALSE, stepwise = FALSE, approximation = FALSE)
-# fit <- Arima(sheep, order = c(3, 1, 0))
-fit$coef
+#fit <- auto.arima(sheep, seasonal = FALSE, stepwise = FALSE, approximation = FALSE)
+fit <- Arima(sheep, order = c(3, 1, 0))
+fit
 ```
 
 
@@ -161,6 +166,7 @@ print(phi4, 2)
 
 
 ```
+
 e. The last five values of the series are given below.
 
 |Year              | 1964| 1965| 1966| 1967| 1968|
@@ -168,6 +174,7 @@ e. The last five values of the series are given below.
 |Millions of tons  | 467 | 512 | 534 | 552 | 545 |
 
 Without using the `forecast` function, calculate forecasts for the next three years (1969--1971) using R.
+
 ```{r}
 y <- as.numeric(bicoal)
 
@@ -202,7 +209,8 @@ f. Now fit the model in R and obtain the forecasts from the same model. How are 
 auto_forecasts <- forecast(fit, h = 3)
 print(auto_forecasts)
 ```
-they are the same as our forecasts as they use the same coefficents to forecast the data.
+
+They are the same as our forecasts as they use the same coefficents to forecast the data.
 
 
 
@@ -210,12 +218,12 @@ they are the same as our forecasts as they use the same coefficents to forecast 
 
 ```{r setup, include=FALSE}
 # clean existing variables
-rm(list=ls())
+# rm(list=ls())
 # load useful libraries
-library(readxl)
-library(tidyverse)
-library(graphics) # for ts.plot
-library(forecast) # ARIMA model
+# library(readxl)
+# library(tidyverse)
+# library(graphics) # for ts.plot
+# library(forecast) # ARIMA model
 ```
 
 Load FinalData.xlsx and create a time series ts.lSTF = log(STF_Real). Plot ts.lSTF.

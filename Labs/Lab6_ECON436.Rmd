@@ -154,7 +154,7 @@ rm(list=ls())
 library(readxl)
 library(tidyverse)
 library(graphics) # for ts.plot
-library(forecast) # ARIMA modelling
+library(forecast) # ARIMA model
 ```
 
 Load FinalData.xlsx and create a time series ts.lSTF = log(STF_Real). Plot ts.lSTF.

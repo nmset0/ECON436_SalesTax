@@ -1,6 +1,6 @@
 ---
 title: "Lab 6"
-author: "Nathan Seto"
+author: "Abdulla Almansori, Alex Firth, Nathan Seto"
 date: "`r Sys.Date()`"
 output: pdf_document
 ---
@@ -107,41 +107,102 @@ Yes, they are different from my estimations, but they are within the 95 percent 
 a. Plot the annual bituminous coal production in the United States from 1920 to 1968 (data set bicoal).Use the function ndiffs() to see how many times the time series needs to be differentiated to be stationary.
 
 ```{r}
+autoplot(bicoal) +
+  ggtitle("Annual Bituminous Coal Production in the U.S. (1920-1968)") +
+  xlab("Year") +
+  ylab("Production")
 
+dneeded <- ndiffs(bicoal)
+print(dneeded)
 ```
 
 b. You decide to fit the following model to the series:yt=c+ϕ1yt−1+ϕ2yt−2+ϕ3yt−3+ϕ4yt−4+εtwhere yt is the coal production in year t and εt is a white noise series. What sort of ARIMA model is this (i.e., what are p, d, and q)?
 
+This is an ARIMA(4, 0, 0)/ar(4) model because it uses autoregressive terms up to 4 lags  
+p=4
+d=0
+q=0
 
 c. Explain why this model was chosen using the ACF and PACF.
+
+The PACF shows 4 significant lags before cutting off, while the ACF decayed gradually, indicating an autoregressive process rather than a moving average or mixed model.
 
 ```{r}
 
 ```
 
+d.) Fit the model to the data using the Arima function. Note that you will need to set the
+parameter include.constant=TRUE. Check that c=162.00, φ1=0.83, φ2=−0.34, φ3=0.55,
+andφ4=−0.38. Note that the Arima function doesn’t provide you with c directly. It
+provides you with the mean of the time series. You can calculate c by running:
+c <- mu * (1-phi1-phi2-phi3-phi4)
 
-d. The last five values of the series are given below.
+
+```{r bicoalfit, echo=FALSE, cache=TRUE}
+
+fit <- Arima(bicoal, order = c(4, 0, 0), include.constant = TRUE)
+summary(fit)
+
+
+phi1 <- fit$coef["ar1"]
+phi2 <- fit$coef["ar2"]
+phi3 <- fit$coef["ar3"]
+phi4 <- fit$coef["ar4"]
+mu <- fit$coef["intercept"]  #mu
+
+
+c <- mu * (1 - phi1 - phi2 - phi3 - phi4)
+
+print(c, 2)
+print(phi1, 2)
+print(phi2, 2)
+print(phi3, 2)
+print(phi4, 2)
+
+
+```
+e. The last five values of the series are given below.
 
 |Year              | 1964| 1965| 1966| 1967| 1968|
 |:-----------------|----:|----:|----:|----:|----:|
 |Millions of tons  | 467 | 512 | 534 | 552 | 545 |
 
-```{r bicoalfit, echo=FALSE, cache=TRUE}
-
-```
-
 Without using the `forecast` function, calculate forecasts for the next three years (1969--1971) using R.
 ```{r}
+y <- as.numeric(bicoal)
+
+# Manual forecast function
+forecast_ar4 <- function(y, c, phi1, phi2, phi3, phi4, h) {
+  forecasts <- numeric(h)
+  for (t in 1:h) {
+    forecasts[t] <- c + 
+                    phi1 * y[length(y)] +    
+                    phi2 * y[length(y)-1] +  
+                    phi3 * y[length(y)-2] +  
+                    phi4 * y[length(y)-3]     
+    y <- c(y, forecasts[t])  # Append forecast to extend the series
+  }
+  return(forecasts)
+}
+
+# Generate forecasts
+forecasts <- forecast_ar4(y, c, phi1, phi2, phi3, phi4, h = 3)
+names(forecasts) <- 1969:1971
+print(round(forecasts, 4))
+
 
 
 ```
 
 
 
-b. Now fit the model in R and obtain the forecasts from the same model. How are they different from yours? Why?
+f. Now fit the model in R and obtain the forecasts from the same model. How are they different from yours? Why?
 
 ```{r}
+auto_forecasts <- forecast(fit, h = 3)
+print(auto_forecasts)
 ```
+they are the same as our forecasts as they use the same coefficents to forecast the data.
 
 
 

@@ -40,7 +40,7 @@ ndiffs(sheep) # how many times the time series needs to be differentiated to bec
 
 The time series needs to be differentiated one time to be stationary.
 
-b. Assume you decide to fit the following model:$y_t=y_{t−1}+\phi_1(y_{t−1}−y_{t−2})+\phi_2(y_{t−2}−y_{t−3})+\phi_3(y_{t−3}−y_{t−4})+\epsilon_t$,where εt is a white noise series. What sort of ARIMA model is this (i.e., what are p, d, and q)?
+b. Assume you decide to fit the following model:$y_t=y_{t−1}+\phi_1(y_{t−1}−y_{t−2})+\phi_2(y_{t−2}−y_{t−3})+\phi_3(y_{t−3}−y_{t−4})+\epsilon_t$,where $\epsilon_t$ is a white noise series. What sort of ARIMA model is this (i.e., what are p, d, and q)?
 
 
 This is an ARIMA(3, 1, 0) model.

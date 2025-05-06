@@ -160,7 +160,7 @@ library(forecast) # ARIMA modelling
 Load FinalData.xlsx and create a time series ts.lSTF = log(STF_Real). Plot ts.lSTF.
 
 ```{r}
-
+Finaldata <- read_excel("~/ECON436_SalesTax/Data/FinalData.xlsx")
 ```
 
 a. Fit a seasonal ARIMA model using the option seasonal=TRUE. What model is identified as the best fit?

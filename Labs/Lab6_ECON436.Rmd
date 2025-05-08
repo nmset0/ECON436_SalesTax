@@ -1,12 +1,11 @@
 ---
 title: "Lab 6"
-author: "Abdulla Almansori, Alex Firth, Nathan Seto"
+author: "Abdulla Almansoori, Alex Firth, Nathan Seto"
 date: "`r Sys.Date()`"
 output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-rm(list = ls())
 library(knitr)
 library(formatR)
 library(readxl)
@@ -63,7 +62,7 @@ The ACF yields an order of 3, and the data needs to be differenced one time.
 
 
 ```{r sheepfit, echo=FALSE, cache=TRUE}
-#fit <- auto.arima(sheep, seasonal = FALSE, stepwise = FALSE, approximation = FALSE)
+# fit <- auto.arima(sheep, seasonal = FALSE, stepwise = FALSE, approximation = FALSE)
 fit <- Arima(sheep, order = c(3, 1, 0))
 fit
 ```
@@ -79,16 +78,18 @@ The estimated parameters are $\phi_1$=0.421, $\phi_2$=−0.202, and $\phi_3$=−
 
 ```{r 2d}
 # function to predict sheep
-predictSheep <- function(c, y1, y2, y3, y4) {
+predictSheep <- function(y1, y2, y3, y4) {
   # calculate predictions with the provided coefficients
-  c_pred <- c + (y1 - y2) * 0.421 + (y2 - y3) * (-.202) + (y3 - y4) * (-.304) # y1 = y_{t-1}, y2 = y_{t-2}, etc.
+  c_pred <- y1 + ((y1 - y2) * (0.421)) + ((y2 - y3) * (-.202)) + ((y3 - y4) * (-.304)) 
   return(c_pred)
 }
 
+vec <- sheep[69:73]
+
 # store predictions
-c1 <- predictSheep(1797, 1791, 1627, 1665, 1648)
-c2 <- predictSheep(c1, 1797, 1791, 1627, 1665)
-c3 <- predictSheep(c2, 1717, 1797, 1791, 1627)
+c1 <- predictSheep(vec[5], vec[4], vec[3], vec[2])
+c2 <- predictSheep(c1, vec[5], vec[4], vec[3])
+c3 <- predictSheep(c2, c1, vec[5], vec[4])
 
 # print results
 cat("Predicted Number of Sheep in 1940:", round(c1), "\n")
@@ -104,7 +105,7 @@ forecast(fit, h = 3)
 ```
 
 
-Yes, they are different from my estimations, but they are within the 95 percent interval.
+They are the same.
 
 
 # Ex 3
@@ -132,9 +133,6 @@ c. Explain why this model was chosen using the ACF and PACF.
 
 The PACF shows 4 significant lags before cutting off, while the ACF decayed gradually, indicating an autoregressive process rather than a moving average or mixed model.
 
-```{r}
-
-```
 
 d.) Fit the model to the data using the Arima function. Note that you will need to set the
 parameter include.constant=TRUE. Check that c=162.00, φ1=0.83, φ2=−0.34, φ3=0.55,
@@ -146,14 +144,13 @@ c <- mu * (1-phi1-phi2-phi3-phi4)
 ```{r bicoalfit, echo=FALSE, cache=TRUE}
 
 fit <- Arima(bicoal, order = c(4, 0, 0), include.constant = TRUE)
-summary(fit)
-
+fit
 
 phi1 <- fit$coef["ar1"]
 phi2 <- fit$coef["ar2"]
 phi3 <- fit$coef["ar3"]
 phi4 <- fit$coef["ar4"]
-mu <- fit$coef["intercept"]  #mu
+mu <- fit$coef["intercept"]  
 
 
 c <- mu * (1 - phi1 - phi2 - phi3 - phi4)
@@ -210,36 +207,46 @@ auto_forecasts <- forecast(fit, h = 3)
 print(auto_forecasts)
 ```
 
-They are the same as our forecasts as they use the same coefficents to forecast the data.
+They are the same as our forecasts as they use the same coefficients to forecast the data.
 
 
 
 ## Extracredit
 
-```{r setup, include=FALSE}
-# clean existing variables
-# rm(list=ls())
-# load useful libraries
-# library(readxl)
-# library(tidyverse)
-# library(graphics) # for ts.plot
-# library(forecast) # ARIMA model
-```
-
 Load FinalData.xlsx and create a time series ts.lSTF = log(STF_Real). Plot ts.lSTF.
 
 ```{r}
-Finaldata <- read_excel("~/ECON436_SalesTax/Data/FinalData.xlsx")
+FinalData <- read_excel("~/ECON436_SalesTax/Data/FinalData.xlsx")
+
+ts.lSTF <- ts(log(FinalData$Lead_STF_Real))
+
+ts.plot(ts.lSTF, main = "Log Lead_STF_Real")
 ```
 
 a. Fit a seasonal ARIMA model using the option seasonal=TRUE. What model is identified as the best fit?
 
 ```{r}
-
+stf_fit <- auto.arima(FinalData$Lead_STF_Real, seasonal = TRUE)
+stf_fit
 ```
-b.	Predict the value of log(STF_Real) for the first 11 months of 2025. Exponentiate the variables x,mean, lower,and upper and plot FC sales tax + the predictions for 2025.
+An ARIMA(2, 1, 2) model is the best fit.
+
+b.	Predict the value of log(STF_Real) for the first 11 months of 2025. Exponentiate the variables x, mean, lower, and upper and plot FC sales tax + the predictions for 2025.
 
 ```{r}
+forecast <- forecast(stf_fit, h = 11)
+forecast$mean <-  exp(forecast$mean)
+forecast$lower <- exp(forecast$lower)
+forecast$upper <- exp(forecast$upper)
 
+as.data.frame(forecast$mean)
 
+df <- FinalData |> select(Month, year, Lead_STF_Real)
+df$year[is.na(df$year)] <- 2025
+rows_2025 <- which(df$year == 2025)[1:11]
+df$Lead_STF_Real[rows_2025] <- log(forecast$mean)
+
+ts.plot(ts(df$Lead_STF_Real))
 ```
+
+c. They are a little different than the values presented in the final project, but they also have not been manipulated the same.
